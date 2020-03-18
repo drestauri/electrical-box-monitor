@@ -10,11 +10,14 @@ import home.utils.Serial;
 
 /************* NOTES *****************
  * Expected data from Arduino:
- * 	A1024 = Analog Channel 1, Values: 0-1024
+ *  A1024 = Analog Channel 1, Values: 0-1024
  *  B1024 = Analog Channel 2, Values: 0-1024
  *  C1024 = Analog Channel 3, Values: 0-1024
  *  D1024 = Analog Channel 4, Values: 0-1024
- *  Z99 = Heartbeat, Values: 0-99, 
+ *  L999 = Average loop time
+ *  S999 = Sample period before analog channel max is sent
+ *  TBD:
+ *  	Z99 = Heartbeat, Values: 0-99, 
  *  	- echos this app's Heartbeat value to ensure sync
  *  	- 0 from RPi means stop sending data (let serial buffer clear and resync)
  *
@@ -121,38 +124,38 @@ public class App {
 			{
 				tStr = serial.getLastData();
 				// Handle Data
-				if(tStr.contains("A:"))
+				if(tStr.contains("A"))
 				{
 					// A = Analog Channel 0
 					analog0Data = getInt(tStr);
 					newAnalog0Data = true;
 				}
-				else if(tStr.contains("B:"))
+				else if(tStr.contains("B"))
 				{
 					// B = Analog Channel 1
 					analog1Data = getInt(tStr);
 					newAnalog1Data = true;
 				}
-				else if(tStr.contains("C:"))
+				else if(tStr.contains("C"))
 				{
 					// C = Analog Channel 2
 					analog2Data = getInt(tStr);
 					newAnalog2Data = true;
 				}
-				else if(tStr.contains("D:"))
+				else if(tStr.contains("D"))
 				{
 					// D = Analog Channel 3
 					analog3Data = getInt(tStr);
 					newAnalog3Data = true;
 				}
-				else if(tStr.contains("L:"))
+				else if(tStr.contains("L"))
 				{
 					// L = average loop time
 					// 16.67 / L = how many samples per 60Hz cycle
 					loopData = getInt(tStr);
 					newLoopData = true;
 				}
-				else if(tStr.contains("S:"))
+				else if(tStr.contains("S"))
 				{
 					// S = sample period (how long we sample for when trying to find the max voltage)
 					// Sample period / 16.67 = how many 60Hz cycles we sampled
@@ -195,9 +198,8 @@ public class App {
 	
 	private static int getInt(String s)
 	{
-		// Strings come in the form A:9999 with any number of digits
-		return Integer.parseInt(s.substring(2));
+		if(s.length()>1)
+			return Integer.parseInt(s.substring(1));
+		return 0;
 	}
 }
-
-
