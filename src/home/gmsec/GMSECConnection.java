@@ -1,5 +1,9 @@
 package home.gmsec;
 
+// IMPORTANT:
+// Add the location of the .../GMSEC_API/bin folder to your PATH environment variable
+// On Linux, make sure you use -Djava.library.path=PATH where PATH is the location of the .../GMSEC_API/bin folder
+
 import gov.nasa.gsfc.gmsec.api.Config;
 import gov.nasa.gsfc.gmsec.api.GMSEC_Exception;
 import gov.nasa.gsfc.gmsec.api.mist.ConnectionManager;

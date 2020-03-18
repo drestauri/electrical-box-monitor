@@ -81,7 +81,7 @@ public class App {
 			System.out.println(" Example middleware IDs: bolt or activemq394");
 			System.out.println(" Port is commonly 61616 for ActiveMQ and 9100 for Bolt");
 			System.out.println("==========");
-			System.exit(-1); // Comment this out during dev
+			//System.exit(-1); // Comment this out during dev
 		}
 		
 		
