@@ -290,6 +290,12 @@ public class Serial implements SerialPortDataListener{
 	}
 	
 	
+	public boolean isConnected()
+	{
+		if(serialPort == null)
+			return false;
+		return true;
+	}
 
 
 	// This function only returns true once for each time lastData is updated
