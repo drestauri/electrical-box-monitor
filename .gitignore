@@ -1,0 +1,5 @@
+#comment
+*.class
+*.jar
+release/
+lib/
