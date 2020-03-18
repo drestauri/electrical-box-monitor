@@ -297,11 +297,6 @@ public class Serial implements SerialPortDataListener{
 		return true;
 	}
 
-
-	// This function only returns true once for each time lastData is updated
-	// The assumption is if you test this and it returns true then you accessed lastData
-	// immediately after. In which case, new data is no longer available and this function
-	// should return false until the next data point is received
 	public boolean isDataAvail()
 	{
 		// If start index isn't on top of current data index, then we have data
