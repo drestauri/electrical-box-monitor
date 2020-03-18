@@ -2,7 +2,10 @@ package home.gmsec;
 
 // IMPORTANT:
 // Add the location of the .../GMSEC_API/bin folder to your PATH environment variable
-// On Linux, make sure you use -Djava.library.path=PATH where PATH is the location of the .../GMSEC_API/bin folder
+// Raspberry Pi command for running is like:
+// sudo java -jar -Djava.library.path=/home/pi/Desktop/GMSEC_API/bin filename.jar arg0 arg1 arg2 arg3
+// NOTE: running GMSEC on Raspberry Pi requires a special build of the GMSEC API!
+// 	Stay tuned...
 
 import gov.nasa.gsfc.gmsec.api.Config;
 import gov.nasa.gsfc.gmsec.api.GMSEC_Exception;
