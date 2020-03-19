@@ -156,7 +156,6 @@ public class Serial implements SerialPortDataListener{
 		byte[] newData = new byte[serialPort.bytesAvailable()];
 		// Fill the buffer with data off the serial bus
 		serialPort.readBytes(newData, newData.length);
-
 		// Step through each character in the newData buffer
 		for (int i = 0; i < newData.length; ++i)
 		{

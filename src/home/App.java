@@ -1,9 +1,15 @@
 package home;
 
-import gov.nasa.gsfc.gmsec.api.Message;
+/******* TO DO ************
+ * Implement auto launch of this code upon boot
+ * Implement repeated attempts to connect to message queue
+ * 	> Try to do in code, but otherwise may need to auto reboot device
+ * Consider hosting message queue on this device
+ */
+
 import home.gmsec.GMSECConnection;
 import home.gmsec.GMSECPublisher;
-import home.gmsec.GMSECSubscriber;
+//import home.gmsec.GMSECSubscriber;
 import home.gmsec.MsgFactory;
 import home.utils.DataLogger;
 import home.utils.Serial;
@@ -26,14 +32,13 @@ import home.utils.Serial;
 
 public class App {
 	
-	public static final String EXAMPLE_SUBSCRIPTION_SUBJECT =  "GMSEC.TEST.PUBLISH";
 	public static final String DEVICE = "PI";
 	public static final String LOCATION = "GARAGE";
 	public static final String ROLE = "POWER-MONITOR";
 	
 	public static DataLogger log;
 	public static GMSECConnection gmsec;
-	private static GMSECSubscriber gSub;
+	//private static GMSECSubscriber gSub;
 	private static GMSECPublisher gPub;
 	private static MsgFactory msgFact;
 	//private static CustomCallback callback;
@@ -60,7 +65,7 @@ public class App {
 		
 		//======== GET COMMAND LINE ARGUMENTS ==========
 		log.LogMessage_Low("Getting command line args");
-		String commPort = "COM5";
+		String commPort = "COM3";
 		String gmsec_args[] = {"subscribe", "mw-id=bolt", "server=localhost:9100"};
 		
 		if (args.length == 1)
@@ -184,6 +189,7 @@ public class App {
 				// Reset the flags
 				newLoopData = false;
 				newSampleData = false;
+				System.out.println("Sending status");
 			}
 		}
 		
@@ -198,8 +204,15 @@ public class App {
 	
 	private static int getInt(String s)
 	{
+		// If we have at least 2 characters
 		if(s.length()>1)
+		{
+			// check the 2nd through the end to make sure they're numbers
+			for(int i=1; i<s.length(); i++)
+				if(s.charAt(i)<'0'||s.charAt(i)>'9')
+					return 0;
 			return Integer.parseInt(s.substring(1));
+		}
 		return 0;
 	}
 }

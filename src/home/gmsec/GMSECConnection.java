@@ -1,11 +1,14 @@
 package home.gmsec;
 
 // IMPORTANT:
-// Add the location of the .../GMSEC_API/bin folder to your PATH environment variable
-// Raspberry Pi command for running is like:
-// sudo java -jar -Djava.library.path=/home/pi/Desktop/GMSEC_API/bin filename.jar arg0 arg1 arg2 arg3
-// NOTE: running GMSEC on Raspberry Pi requires a special build of the GMSEC API!
-// 	Stay tuned...
+// Add the location of the .../GMSEC_API/bin folder to your PATH environment variable (Windows)
+
+// NOTE: running GMSEC on Raspberry Pi requires a special build of the GMSEC API! This must be obtained
+//   from NASA: https://gmsec.gsfc.nasa.gov/
+// Unpack the tgz on the Raspberry Pi:
+//		tar -xvzf filename.tgz
+// Raspberry Pi command for running your app is something like:
+// 		sudo java -jar -Djava.library.path=/home/pi/Desktop/opt/GMSEC_API-4.4.2/bin app.jar ttyACM0 subscribe mw-id=... server=...
 
 import gov.nasa.gsfc.gmsec.api.Config;
 import gov.nasa.gsfc.gmsec.api.GMSEC_Exception;

@@ -15,7 +15,7 @@ public class MsgFactory {
 		Message m = new Message(messageSubject, Message.MessageKind.PUBLISH);
 		// TODO: add your required fields
 		m.addField("LOCATION", loc); // Eg. Garage
-		m.addField("ROLE", device); // Eg. Power-Monitor
+		m.addField("ROLE", role); // Eg. Power-Monitor
 		m.addField("TOPIC", "DATA"); // Eg. Status
 		m.addField("ANALOG0", analog0);
 		m.addField("ANALOG1", analog1);
@@ -35,7 +35,7 @@ public class MsgFactory {
 		Message m = new Message(messageSubject, Message.MessageKind.PUBLISH);
 		// TODO: add your required fields
 		m.addField("LOCATION", loc); // Eg. Garage
-		m.addField("ROLE", device); // Eg. Power-Monitor
+		m.addField("ROLE", role); // Eg. Power-Monitor
 		m.addField("TOPIC", "STATUS"); // Eg. Status
 		m.addField("LOOP-TIME", avg_loop);
 		m.addField("SAMPLE-PERIOD", sample_period);
@@ -53,7 +53,7 @@ public class MsgFactory {
 		Message m = new Message(messageSubject, Message.MessageKind.PUBLISH);
 		// TODO: add your required fields
 		m.addField("LOCATION", loc);
-		m.addField("ROLE", device);
+		m.addField("ROLE", role);
 		m.addField("TOPIC", "WARNING");
 		m.addField("MESSAGE", text);
 		return m;
