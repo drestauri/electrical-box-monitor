@@ -22,7 +22,7 @@ import java.util.Date;
 
 
 
-public class DataLogger {
+public class Logger {
 
 	// For writing to the data log
 	private FileWriter m_logOutFile = null;
