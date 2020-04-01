@@ -41,7 +41,7 @@ public class MsgFactory {
 	}
 	
 	// This method generates a simple status message that is sent every second
-	public Message generateStatusMessage(String device, String role, String loc, int avg_loop, int sample_period)
+	public Message generateStatusMessage(String soft_version, String device, String role, String loc, int avg_loop, int sample_period)
 	{
 		//GMSEC.<SOURCE-DEVICE>.<SOURCE-APP>.<SOURCE-LOCATION>.<TYPE>.<SUBTYPE>.{DEST-DEVICE}.{DEST-APP}.{DEST-LOCATION}
 				String messageSubject = "GMSEC." + device.toUpperCase() + "." + role.toUpperCase() + "." + loc.toUpperCase() + ".STATUS";
@@ -54,6 +54,7 @@ public class MsgFactory {
 		//m.addField("SUB-TYPE", "FULL"); // Eg. single, long term
 		m.addField("LOOP-TIME", avg_loop);
 		m.addField("SAMPLE-PERIOD", sample_period);
+		m.addField("SOFTWARE-VERSION", soft_version);
 		return m;
 	}
 

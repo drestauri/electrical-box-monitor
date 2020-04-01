@@ -21,7 +21,11 @@ import home.utils.DataLogger;
 import home.utils.Logger;
 import home.utils.Serial;
 
-/************* NOTES *****************
+/************ TODO *****************
+ * - Send units along with each data message
+ * - Add version to log message at boot up as well
+ *  
+ ************* NOTES *****************
  * Expected data from Arduino:
  *  A1024 = Analog Channel 1, Values: 0-1024
  *  B1024 = Analog Channel 2, Values: 0-1024
@@ -38,7 +42,7 @@ import home.utils.Serial;
  */
 
 public class App {
-	
+	public static final String VERSION = "2020.4.1.0816";
 	public static final String DEVICE = "PI";
 	public static final String LOCATION = "GARAGE";
 	public static final String ROLE = "EBM";
@@ -72,11 +76,6 @@ public class App {
 	private static short sampleData = 0;
 	private static boolean isFinished = false;	
 	
-	private static short index = 0;
-	//private static short[] analog0 = new short[DATA_AVERAGING];
-	//private static short[] analog1 = new short[DATA_AVERAGING];
-	//private static short[] analog2 = new short[DATA_AVERAGING];
-	//private static short[] analog3 = new short[DATA_AVERAGING];
 	private static int lastSecond;
 	private static short[] dataGarageMainSeconds = new short[60];
 	private static short[] dataGaragePlugsSeconds = new short[60];
@@ -224,7 +223,7 @@ public class App {
 			if (newLoopData & newSampleData)
 			{
 				// Send the GMSEC Data Message
-				gPub.publish(msgFact.generateStatusMessage(DEVICE, ROLE, LOCATION, loopData, sampleData));
+				gPub.publish(msgFact.generateStatusMessage(VERSION, DEVICE, ROLE, LOCATION, loopData, sampleData));
 				// Reset the flags
 				newLoopData = false;
 				newSampleData = false;
@@ -264,49 +263,6 @@ public class App {
 		newAnalog1Data = false;
 		newAnalog2Data = false;
 		newAnalog3Data = false;
-		
-		/*
-		// Store the latest values in recent data history for averaging
-		analog0[index] = analog0Data;
-		analog1[index] = analog1Data;
-		analog2[index] = analog2Data;
-		analog3[index] = analog3Data;
-		index++;
-		
-		if (index>=DATA_AVERAGING)
-			index = 0;		
-		
-		// Find the max data point in the last 11 analog data points
-		short a0MAX = 0;
-		for(int i=0; i<DATA_AVERAGING; i++)
-			a0MAX = a0MAX < analog0[i] ? analog0[i] : a0MAX;
-
-		short a1MAX = 0;
-		for(int i=0; i<DATA_AVERAGING; i++)
-			a1MAX = a1MAX < analog1[i] ? analog1[i] : a1MAX;
-			
-		short a2MAX = 0;
-		for(int i=0; i<DATA_AVERAGING; i++)
-			a2MAX = a2MAX < analog2[i] ? analog2[i] : a2MAX;
-			
-		short a3MAX = 0;
-		for(int i=0; i<DATA_AVERAGING; i++)
-			a3MAX = a3MAX < analog3[i] ? analog3[i] : a3MAX;
-		
-		// Normalize the data point around 512 and if it's small or negative, just set it to 0 
-		a0MAX -= 512;
-		if(a0MAX < 3)
-			a0MAX = 0;
-		a1MAX -= 512;
-		if(a1MAX < 3)
-			a1MAX = 0;
-		a2MAX -= 512;
-		if(a2MAX < 3)
-			a2MAX = 0;
-		a3MAX -= 512;
-		if(a3MAX < 3)
-			a3MAX = 0;
-			*/
 		
 		// Normalize the data point around 512 and if it's small or negative, just set it to 0 
 		analog0Data -= 512;
