@@ -10,7 +10,7 @@ import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortDataListener;
 import com.fazecast.jSerialComm.SerialPortEvent;
 
-import home.App;
+import home.App_EBM;
 
 // TODO:
 // > Add functionality to measure time between data points, possibly last 8 data points?
@@ -87,7 +87,7 @@ public class Serial implements SerialPortDataListener{
 		// If we couldn't find a matching port
 		if (serialPort == null) {
 			System.out.println("Could not find desired COM port.");
-			App.log.LogMessage_High("Could not find desired COM port.");
+			App_EBM.log.LogMessage_High("Could not find desired COM port.");
 			return;
 		}
 
@@ -200,7 +200,7 @@ public class Serial implements SerialPortDataListener{
 				// If we receive anything other than 10 or 13 (ACSII) put the character in the buffer
 				if(bufIndex >= DATA_BUFFER_SIZE)
 				{
-					App.log.LogMessage_High("Error: Data buffer overflow. Current buffer: " + String.valueOf(dataBuffer, 0, DATA_BUFFER_SIZE-1));
+					App_EBM.log.LogMessage_High("Error: Data buffer overflow. Current buffer: " + String.valueOf(dataBuffer, 0, DATA_BUFFER_SIZE-1));
 					System.err.println("Error: Data buffer overflow. Current buffer: " + String.valueOf(dataBuffer, 0, DATA_BUFFER_SIZE-1));
 					dataOverflow = true;
 				}
@@ -280,7 +280,7 @@ public class Serial implements SerialPortDataListener{
 			// Make sure all the characters of the string are numbers
 			if(tStr.charAt(i) < '0' || tStr.charAt(i) > '9')
 			{
-				App.log.LogMessage_High("ERROR: Attempted to convert non integer data point to an integer");
+				App_EBM.log.LogMessage_High("ERROR: Attempted to convert non integer data point to an integer");
 				System.err.println("ERROR: Attempted to convert non integer data point to an integer");
 				return -1;
 			}

@@ -24,6 +24,8 @@ import home.utils.Serial;
 /************ TODO *****************
  * - Send units along with each data message
  * - Add version to log message at boot up as well
+ * - Save the last 10 or so times the app started and send that with the status message.
+ * - Reduce the period for status messages to 10 seconds or something 
  *  
  ************* NOTES *****************
  * Expected data from Arduino:
@@ -41,8 +43,8 @@ import home.utils.Serial;
  *
  */
 
-public class App {
-	public static final String VERSION = "2020.4.1.0816";
+public class App_EBM {
+	public static final String VERSION = "2020.4.7.2136";
 	public static final String DEVICE = "PI";
 	public static final String LOCATION = "GARAGE";
 	public static final String ROLE = "EBM";

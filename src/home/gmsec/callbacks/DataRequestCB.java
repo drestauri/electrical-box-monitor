@@ -1,6 +1,6 @@
 package home.gmsec.callbacks;
 
-import home.App;
+import home.App_EBM;
 import gov.nasa.gsfc.gmsec.api.GMSEC_Exception;
 import gov.nasa.gsfc.gmsec.api.Message;
 import gov.nasa.gsfc.gmsec.api.mist.ConnectionManager;
@@ -20,7 +20,7 @@ public class DataRequestCB extends ConnectionManagerCallback{
 		// The minute, hour, day, and month data is generated and stored at roll over timing
 		// but not broadcast unless requested
 		try {
-			App.sendFullData(msg.getStringValue("DATA-NAME"));
+			App_EBM.sendFullData(msg.getStringValue("DATA-NAME"));
 		} catch (GMSEC_Exception e) {
 			e.printStackTrace();
 		}

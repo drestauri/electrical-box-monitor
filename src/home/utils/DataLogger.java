@@ -11,7 +11,7 @@ import java.util.Calendar;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Properties;
 
-import home.App;
+import home.App_EBM;
 
 /*********** TODO **************
  *  MAJOR: Implement support for more than seconds 
@@ -25,9 +25,9 @@ public class DataLogger {
 
 	private static Properties props;
 	private static File dataFile;
-	private final String EMPTY_MIN_60 = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";
-	private final String EMPTY_HR_MO_24 = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";
-	private final String EMPTY_DAY_31 = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";
+	private final String EMPTY_MIN_60 = "-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1";
+	private final String EMPTY_HR_MO_24 = "-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1";
+	private final String EMPTY_DAY_31 = "-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1";
 	private int yearChange = 0; 
 	private int monthChange = 0;
 	private int dayChange = 0; 
@@ -46,6 +46,18 @@ public class DataLogger {
 	
 	public void loadData()
 	{
+		File tmpDir = new File("data.properties");
+		App_EBM.log.LogMessage_High("Props file length: " + tmpDir.length());
+		if(!tmpDir.exists())
+		{
+			App_EBM.log.LogMessage_High("Props file not found");
+			genDefaultDataFile();
+		}else if(tmpDir.length() < 1000)
+		{
+			App_EBM.log.LogMessage_High("Props file empty or invalid");
+			genDefaultDataFile();
+		}
+		
 		InputStream is;
 		try {
 			is = new FileInputStream(dataFile);
@@ -53,14 +65,17 @@ public class DataLogger {
 				props.loadFromXML(is);
 		} catch (FileNotFoundException e) {
 			System.out.println("Props file not found");
+			App_EBM.log.LogMessage_High("Error: Props file not found");
 			e.printStackTrace();
 		} catch (InvalidPropertiesFormatException e) {
 			System.out.println("Props file invalid");
+			App_EBM.log.LogMessage_High("Error: Props file invalid");
 			e.printStackTrace();
 		} catch (IOException e) {
 			System.out.println("Props file IO error");
+			App_EBM.log.LogMessage_High("Error: Props file IO error");
 			e.printStackTrace();
-		}		
+		}
 	}
 	
 	public void saveData(int garage_main, int garage_plugs, int laundry)
@@ -92,7 +107,7 @@ public class DataLogger {
 			updateMins(garage_main, garage_plugs, laundry);
 		else
 		{
-			App.log.LogMessage_High("ERROR minChange: " + Integer.toString(minChange));
+			App_EBM.log.LogMessage_High("ERROR minChange: " + Integer.toString(minChange));
 			resetMins();
 		}
 		// Similarly if the hours have changed since we last update and at least some of the data is still valid, update
@@ -101,21 +116,21 @@ public class DataLogger {
 			updateHours();
 		else if(hourChange>=24)
 		{
-			App.log.LogMessage_High("ERROR hourChange: " + Integer.toString(hourChange));
+			App_EBM.log.LogMessage_High("ERROR hourChange: " + Integer.toString(hourChange));
 			resetHours();
 		}
 		if(dayChange>0 && dayChange<30)
 			updateDays();
 		else if(dayChange>=30)
 		{
-			App.log.LogMessage_High("ERROR dayChange: " + Integer.toString(dayChange));
+			App_EBM.log.LogMessage_High("ERROR dayChange: " + Integer.toString(dayChange));
 			resetDays();
 		}
 		if(monthChange>0 && monthChange<24)
 			updateMonths();
 		else if(monthChange>=24)
 		{
-			App.log.LogMessage_High("ERROR monthChange: " + Integer.toString(monthChange));
+			App_EBM.log.LogMessage_High("ERROR monthChange: " + Integer.toString(monthChange));
 			resetMonths();
 		}
 		
@@ -134,8 +149,10 @@ public class DataLogger {
 			os = new FileOutputStream(dataFile);
 			props.storeToXML(os, "Minutes are in watt-seconds, hours and days are in kW-seconds, months are kW-minutes", "UTF-8");
 		} catch (FileNotFoundException e) {
+			App_EBM.log.LogMessage_High("Error: Can't save. Props file not found");
 			e.printStackTrace();
 		} catch (IOException e) {
+			App_EBM.log.LogMessage_High("Error: Can't save. Other error");
 			e.printStackTrace();
 		}
 	}
@@ -151,7 +168,7 @@ public class DataLogger {
 
 		// If more than 1 month has passed, set the missed data to -1
 		// Get the current month. Months go 0-30 and we want to track for 24 months so use the odd/eveness of the
-		// month to calculate the index. Also subtract 1 so we are point at last month.
+		// month to calculate the index. Also subtract 1 so we are pointing at last month.
 		int curVal = Calendar.getInstance().get(Calendar.MONTH)+12*(Calendar.getInstance().get(Calendar.YEAR)%2)-1;
 		if (curVal<0)
 			curVal = d1.length-1;
@@ -176,7 +193,7 @@ public class DataLogger {
 		d2[curVal] = sumDataPoints("GARAGE-PLUGS-DAYS",60);
 		d3[curVal] = sumDataPoints("LAUNDRY-DAYS",60);
 		
-		App.log.LogMessage_High("Saving months. curVal: " + curVal + ", g-main: " + d1[curVal] + ", g-plug: " + d2[curVal] + ", laundry: " + d3[curVal]);
+		App_EBM.log.LogMessage_High("Saving months. curVal: " + curVal + ", g-main: " + d1[curVal] + ", g-plug: " + d2[curVal] + ", laundry: " + d3[curVal]);
 		// save the data
 		props.setProperty("GARAGE-MAIN-MONTHS", dataToString(d1));
 		props.setProperty("GARAGE-PLUGS-MONTHS", dataToString(d2));
@@ -192,11 +209,6 @@ public class DataLogger {
 		int[] d1 = getData("GARAGE-MAIN-DAYS");
 		int[] d2 = getData("GARAGE-PLUGS-DAYS");
 		int[] d3 = getData("LAUNDRY-DAYS");
-		
-		// DAY_OF_MONTH is from 1-31 so need to subtract 1 to get correct index and another 1 save the data in last month
-		int curVal = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)-2;
-		if (curVal < 0)
-			curVal = d1.length;
 		
 		// Determine max days last month so we can set the invalid data
 		int leapYear = (Calendar.getInstance().get(Calendar.YEAR)-2020)%4;
@@ -234,6 +246,11 @@ public class DataLogger {
 			lastMax = 31;
 			// April, June, September, November
 		}
+		
+		// DAY_OF_MONTH is from 1-31 so need to subtract 1 to get correct index and another 1 save the data in last day
+		int curVal = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)-2;
+		if (curVal < 0)
+			curVal = lastMax-1; // might not go to the end of the array for days of month
 		
 		// First, make sure that all the invalid data are set as invalid
 		// no need to -1 because the max index will point at the 1st invalid date
@@ -274,7 +291,7 @@ public class DataLogger {
 		d2[curVal] = sumDataPoints("GARAGE-PLUGS-HOURS",1);
 		d3[curVal] = sumDataPoints("LAUNDRY-HOURS",1);
 		
-		App.log.LogMessage_High("Saving days. curVal: " + curVal + ", g-main: " + d1[curVal] + ", g-plug: " + d2[curVal] + ", laundry: " + d3[curVal]);
+		App_EBM.log.LogMessage_High("Saving days. curVal: " + curVal + ", g-main: " + d1[curVal] + ", g-plug: " + d2[curVal] + ", laundry: " + d3[curVal]);
 		// save the data
 		props.setProperty("GARAGE-MAIN-DAYS", dataToString(d1));
 		props.setProperty("GARAGE-PLUGS-DAYS", dataToString(d2));
@@ -294,7 +311,7 @@ public class DataLogger {
 		// Hours are 0-23 so subtract just 1 to point at the last hour
 		int curVal = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)-1;
 		if (curVal < 0)
-			curVal = d1.length;
+			curVal = d1.length-1;
 		int j = curVal;
 		int k = 1;
 		for(int i = 1; i<hourChange; i++)
@@ -311,16 +328,16 @@ public class DataLogger {
 			k++;
 		}
 
-		App.log.LogMessage_High("DEBUG: d1.length: " + Integer.toString(d1.length));
-		App.log.LogMessage_High("DEBUG: d2.length: " + Integer.toString(d2.length));
-		App.log.LogMessage_High("DEBUG: d3.length: " + Integer.toString(d3.length));
+		App_EBM.log.LogMessage_High("DEBUG: d1.length: " + Integer.toString(d1.length));
+		App_EBM.log.LogMessage_High("DEBUG: d2.length: " + Integer.toString(d2.length));
+		App_EBM.log.LogMessage_High("DEBUG: d3.length: " + Integer.toString(d3.length));
 		
 		// Put the data in, divide it by 1000 to put it in kW-seconds
 		d1[curVal] = sumDataPoints("GARAGE-MAIN-MINUTES",1000);
 		d2[curVal] = sumDataPoints("GARAGE-PLUGS-MINUTES",1000);
 		d3[curVal] = sumDataPoints("LAUNDRY-MINUTES",1000);
 		
-		App.log.LogMessage_High("Saving hours. curVal: " + curVal + ", g-main: " + d1[curVal] + ", g-plug: " + d2[curVal] + ", laundry: " + d3[curVal]);
+		App_EBM.log.LogMessage_High("Saving hours. curVal: " + curVal + ", g-main: " + d1[curVal] + ", g-plug: " + d2[curVal] + ", laundry: " + d3[curVal]);
 		// save the data
 		props.setProperty("GARAGE-MAIN-HOURS", dataToString(d1));
 		props.setProperty("GARAGE-PLUGS-HOURS", dataToString(d2));
@@ -338,7 +355,7 @@ public class DataLogger {
 		// Minutes are 0-59 so subtract 1 to point at last value
 		int curVal = Calendar.getInstance().get(Calendar.MINUTE)-1;
 		if (curVal < 0)
-			curVal = d1.length;
+			curVal = d1.length-1;
 		int j = curVal;
 		int k = 1;
 		for(int i = 1; i<minChange; i++)
@@ -359,6 +376,7 @@ public class DataLogger {
 		d2[curVal] = garage_plugs;
 		d3[curVal] = laundry;
 		
+		//App_EBM.log.LogMessage_High("Saving mins. curVal: " + curVal + ", g-main: " + d1[curVal] + ", g-plug: " + d2[curVal] + ", laundry: " + d3[curVal]);
 		props.setProperty("GARAGE-MAIN-MINUTES", dataToString(d1));
 		props.setProperty("GARAGE-PLUGS-MINUTES", dataToString(d2));
 		props.setProperty("LAUNDRY-MINUTES", dataToString(d3));
@@ -380,7 +398,7 @@ public class DataLogger {
 		if(str==null)
 		{
 			System.err.println("******************** getData returned null: " + data_name);
-			App.log.LogMessage_High("ERROR: getData returned null: " + data_name);
+			App_EBM.log.LogMessage_High("ERROR: getData returned null: " + data_name);
 		}
 		if(str.contains(","))
 			s = str.split(",");
@@ -397,7 +415,7 @@ public class DataLogger {
 	
 	private void resetMins()
 	{
-		App.log.LogMessage_High("Resetting mins");
+		App_EBM.log.LogMessage_High("Resetting mins");
 		props.setProperty("GARAGE-MAIN-MINUTES", EMPTY_MIN_60);
 		props.setProperty("GARAGE-PLUGS-MINUTES", EMPTY_MIN_60);
 		props.setProperty("LAUNDRY-MINUTES", EMPTY_MIN_60);
@@ -405,7 +423,7 @@ public class DataLogger {
 	
 	private void resetHours()
 	{
-		App.log.LogMessage_High("Resetting hours");
+		App_EBM.log.LogMessage_High("Resetting hours");
 		props.setProperty("GARAGE-MAIN-HOURS", EMPTY_HR_MO_24);
 		props.setProperty("GARAGE-PLUGS-HOURS", EMPTY_HR_MO_24);
 		props.setProperty("LAUNDRY-HOURS", EMPTY_HR_MO_24);
@@ -413,7 +431,7 @@ public class DataLogger {
 	
 	private void resetDays()
 	{
-		App.log.LogMessage_High("Resetting days");
+		App_EBM.log.LogMessage_High("Resetting days");
 		props.setProperty("GARAGE-MAIN-DAYS", EMPTY_DAY_31);
 		props.setProperty("GARAGE-PLUGS-DAYS", EMPTY_DAY_31);
 		props.setProperty("LAUNDRY-DAYS", EMPTY_DAY_31);
@@ -421,7 +439,7 @@ public class DataLogger {
 	
 	private void resetMonths()
 	{
-		App.log.LogMessage_High("Resetting months");
+		App_EBM.log.LogMessage_High("Resetting months");
 		props.setProperty("GARAGE-MAIN-MONTHS", EMPTY_HR_MO_24);
 		props.setProperty("GARAGE-PLUGS-MONTHS", EMPTY_HR_MO_24);
 		props.setProperty("LAUNDRY-MONTHS", EMPTY_HR_MO_24);
@@ -429,6 +447,7 @@ public class DataLogger {
 	
 	public void genDefaultDataFile()
 	{
+		App_EBM.log.LogMessage_High("Generating new data properties file");
 		props.setProperty("YEAR", Integer.toString(Calendar.getInstance().get(Calendar.YEAR)));
 		props.setProperty("MONTH", Integer.toString(Calendar.getInstance().get(Calendar.MONTH)+1));
 		props.setProperty("DAY_OF_MONTH", Integer.toString(Calendar.getInstance().get(Calendar.DAY_OF_MONTH)));
@@ -447,8 +466,10 @@ public class DataLogger {
 			os = new FileOutputStream(dataFile);
 			props.storeToXML(os, "Minutes are in watt-seconds, hours and days are in kW-seconds, months are kW-minutes", "UTF-8");
 		} catch (FileNotFoundException e) {
+			App_EBM.log.LogMessage_High("Error: Can't save newly generated props file due to file not found error.");
 			e.printStackTrace();
 		} catch (IOException e) {
+			App_EBM.log.LogMessage_High("Error: Can't save newly generated props file.");
 			e.printStackTrace();
 		}
 	}
@@ -468,13 +489,15 @@ public class DataLogger {
 	{
 		String[] sa = props.getProperty(data_name).split(",");
 		int sum = 0;
+		int val = 0;
 		for(int i=0;i<sa.length;i++)
 		{
 			// -1 is used for invalid data. And no point of adding 0...
-			int val = Integer.parseInt(sa[i]);
+			val = Integer.parseInt(sa[i]);
 			if(val > 0)
-				sum += val/divisor; 
+				sum += val; 
 		}
+		sum = sum/divisor;
 		return sum;
 	}
 }
