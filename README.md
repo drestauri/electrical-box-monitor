@@ -2,17 +2,18 @@
 Raspberry Pi receives data over serial from Arduino, processes, then publishes status messages via GMSEC
 
 This software will be placed in a remote AC power consumption device placed at 2 locations around my house.
-It will consist of an Arduino monitoring 4 or so 60Hz AC circuits for power consumption and a Raspberry Pi
+It will consist of an Arduino monitoring 4 to 6 60Hz AC circuits for power consumption and a Raspberry Pi
 that will receive and process the data from the Arduino. This is the code running on the Raspberry Pi.
 
 Since the data that can come across the serial interface is limited, we cannot sample four 60Hz channels very
-efficiently. Instead, the Arduino will likely sample fast and do some local pre-processing of the data prior to 
-sending relevant data over the serial interface. As we are primarily concerned with the power consumption, this
-code will likely receive the peak of the AC voltage of the sensor from the Arduino. If we know that, we 
-can calculate the measured current draw and in turn the power consumption of the circuit in question.
+efficiently. Instead, the Arduino samples as fast as possible and does some local pre-processing of the data prior
+to sending relevant data over the serial interface. As we are primarily concerned with the power consumption, 
+the Arduino samples voltage every 4ms or so for some duration (e.g. 85ms) and saves only the peak reading. With
+this, we can calculate the current being produced by the sensor and in turn the current/power consumption of the 
+circuit in question.
 
-To limit the number of characters sent across the serial interface, data from the Arduino will come encoded
-in the following format
+To limit the number of characters sent across the serial interface, data from the Arduino is encoded in the
+following format
 ```
 A1024
 ```
@@ -20,22 +21,66 @@ The 1st character is a letter identifying the data being sent and the number sta
 is the actual data point. The Arduino's analog data comes a value from 0-1024, and other data may also be sent
 if necessary such as the sample rate, device state of health, etc.
 
-This software will take the messages received from the Arduino and use them to populate a GMSEC message that is
-sent over wifi to a message queue running another device on the network. A master device will in turn receive
-and handle those messages such as display them on a screen or send email alerts, etc. This code may also
-receive commands over GMSEC and change its configuration in real time.
+This software takes the messages received from the Arduino and calculates the average over 1 second. This data
+is stored for 60 seconds and then used to calculate and save the average consumption for the past 60 minutes, 24
+hours, 31 days, or 24 months. Every second, the data is also sent via a GMSEC message to a message queue (GMSEC 
+Bolt) that is also running on this or another device. Another device (such as a PC) can connect over wi-fi to 
+the the message queue and receive those messages and process them for displaying them on a screen or sending 
+email alerts, etc. 
+
+This software can also receive commands over GMSEC to send data other than the 1 second samples.
 
 # Installation
-TBD
+This code is provided as a complete software package with the exception of the GMSEC API components. The GMSEC 
+API can be downloaded from the links at the bottom of the page below for PC. Until I get permission from NASA
+to post the ARM build I have for Raspberry Pi, you will need to contact them to get that build. They are generally
+pretty good to respond to support requests from the GMSEC community:
+```
+https://opensource.gsfc.nasa.gov/projects/GMSEC_API_30/index.php
+```
+Once downloaded, extract the files and add a GMSEC_HOME environment variable to the folder containing the /bin
+folder, and then add %GMSEC_HOME%/bin to your PATH variable (Windows). See the Usage section below for Linux.
+
+Launch bolt by running the following command:
+```
+java -jar %GMSEC_HOME%\bin\bolt.jar
+```
+
+The project should already be set to connect to a locally hosted Bolt message queue, but if not update App_EBM.java
+as follows to set the default values for gmsec_args. Also, connect your Arduino and make sure the default COM port
+matches the port for your Arduino:
+```java
+String commPort = "COM3";
+String gmsec_args[] = {"subscribe", "mw-id=bolt", "server=localhost:9100"}; 
+```
+
+Run the project and make sure it connects to the Arduino and message queue. Once everything works on the PC, export 
+the project as a Runnable JAR file. Transfer the JAR file to your Raspberry Pi to a folder like
+/home/pi/Desktop/project. 
+
+Assuming you've obtained the ARM build of the GMSEC API, copy the files to the Raspberry Pi as well to a location
+such as /home/pi/Desktop/GMSEC_API. 
 
 # Usage
-TBD
-```java
-tbd
+Launch the GMSEC Bolt message queue using the following command:
+```
+sudo java -jar /home/pi/Desktop/GMSEC_API/bin/bolt.jar
+```
+Find out which port your Arduino is on, by running the following command withour your Aruino plugged in and then
+again when it is, and note what changed:
+```
+ls /dev/*tty*
+```
+Launch this application using the following command, which includes linking the GMSEC libraries similar to what
+was required for the environment variables used in Windows, assuming your Arduino is on USB port ttyACM0:
+```
+sudo java -jar -Djava.library.path=/home/pi/Desktop/GMSEC_API/bin/ /home/pi/Desktop/project/electrical-box-monitor.jar ttyACM0 subscribe mw-id=bolt server=localhost:9100
 ```
 
 # Anticipated Updates
 1. Receive GMSEC commands to change it's configuration (TBD)
+2. Implement better error handling for data that doesn't exist or is incorrectly spelled
+3. Potentially will make the DataLogger more generic code to encourage reuse of that
 
 # Contributing
-TBD
+This is for a home project and while you're free to copy and modify to your liking, I will not be accepting contributions.
