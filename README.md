@@ -90,7 +90,7 @@ If all goes well, you should see the electrical-box-monitor.jar code writing dat
 1. Receive GMSEC commands to change it's configuration (TBD)
 2. Implement better error handling for data that doesn't exist or is incorrectly spelled
 3. Potentially will make the DataLogger more generic code to encourage reuse of that
-4. Update code to send last Data point and Status every second regardless of whether new data 
+4. Update code to send last Data point and Status every second regardless of whether new data is available
 
 # Contributing
 This is for a home project and while you're free to copy and modify to your liking, I will not be accepting contributions.
