@@ -24,8 +24,8 @@ public class MsgFactory {
 	}
 
 	// This method generates a long term data message that is sent only in response to a request for the data
-	public Message generateDataMessage(String device, String role, String loc, String data_name, String data)
-	{
+	public Message generateDataMessage(String device, String role, String loc, String data_name, String data, String req_id, String sec, String min, String hr, String day, String mon, String yr)
+	{// device, role, loc, name, data, req, sec, min, hr, d,m,y
 		//GMSEC.<SOURCE-DEVICE>.<SOURCE-APP>.<SOURCE-LOCATION>.<TYPE>.<SUBTYPE>.{DEST-DEVICE}.{DEST-APP}.{DEST-LOCATION}
 				String messageSubject = "GMSEC." + device.toUpperCase() + "." + role.toUpperCase() + "." + loc.toUpperCase() + ".DATA.LONG";
 				// E.g. "GMSEC.PI.POWER-MONITOR.GARAGE.DATA.SINGLE";
@@ -37,6 +37,13 @@ public class MsgFactory {
 		m.addField("SUB-TYPE", "LONG"); // Eg. single, long term
 		m.addField("DATA-NAME", data_name);
 		m.addField("DATA", data);
+		m.addField("REQUEST-ID", req_id);
+		m.addField("SECOND", sec);
+		m.addField("MINUTE", min);
+		m.addField("HOUR", hr);
+		m.addField("DAY", day);
+		m.addField("MONTH", mon);
+		m.addField("YEAR", yr);
 		return m;
 	}
 	

@@ -44,7 +44,7 @@ import home.utils.Serial;
  */
 
 public class App_EBM {
-	public static final String VERSION = "2020.4.7.2136";
+	public static final String VERSION = "2020.4.9.1555";
 	public static final String DEVICE = "PI";
 	public static final String LOCATION = "GARAGE";
 	public static final String ROLE = "EBM";
@@ -360,9 +360,11 @@ public class App_EBM {
 		return sum;
 	}
 	
-	public static void sendFullData(String data_name)
+	public static void sendFullData(String data_name, String req_id)
 	{
-		String gm = dataLog.getValue(data_name);
-		gPub.publish(msgFact.generateDataMessage(DEVICE, ROLE, LOCATION, data_name, gm));
+		String gm = dataLog.getValue(data_name); 
+		gPub.publish(msgFact.generateDataMessage(DEVICE, ROLE, LOCATION, data_name, gm, req_id, 
+				dataLog.getValue("SECOND"), dataLog.getValue("MINUTE"), dataLog.getValue("HOUR"),
+				dataLog.getValue("DAY_OF_MONTH"), dataLog.getValue("MONTH"), dataLog.getValue("YEAR")));
 	}
 }

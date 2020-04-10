@@ -20,9 +20,11 @@ public class DataRequestCB extends ConnectionManagerCallback{
 		// The minute, hour, day, and month data is generated and stored at roll over timing
 		// but not broadcast unless requested
 		try {
-			App_EBM.sendFullData(msg.getStringValue("DATA-NAME"));
+			App_EBM.sendFullData(msg.getStringValue("DATA-NAME"), msg.getStringValue("REQUEST-ID"));
 		} catch (GMSEC_Exception e) {
 			e.printStackTrace();
+			System.err.println("ERROR: failed to extract data from request data message. Message:\n" + msg.toXML());
+			App_EBM.log.LogMessage_High("ERROR: failed to extract data from request data message. Message:\n" + msg.toXML());
 		}
 	}
 
