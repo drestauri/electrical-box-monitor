@@ -13,6 +13,7 @@ import com.fazecast.jSerialComm.SerialPortEvent;
 import home.App_EBM;
 
 // TODO:
+// > Clean up and summarize planned updates
 // > Add functionality to measure time between data points, possibly last 8 data points?
 
 

@@ -5,7 +5,7 @@ import gov.nasa.gsfc.gmsec.api.Message;
 public class MsgFactory {
 	
 	// This method generates a single data point message that is sent every second
-	public Message generateSingleDataMessage(String device, String role, String loc, int second, int garage_main, int garage_plugs, int laundry)
+	public Message generateSingleDataMessage(String device, String role, String loc, int second, int garage_main_red, int garage_main_black, int garage_plugs, int laundry)
 	{
 		//GMSEC.<SOURCE-DEVICE>.<SOURCE-APP>.<SOURCE-LOCATION>.<TYPE>.<SUBTYPE>.{DEST-DEVICE}.{DEST-APP}.{DEST-LOCATION}
 		String messageSubject = "GMSEC." + device.toUpperCase() + "." + role.toUpperCase() + "." + loc.toUpperCase() + ".DATA.SINGLE";
@@ -17,7 +17,8 @@ public class MsgFactory {
 		m.addField("TYPE", "DATA"); // Eg. Data, status, etc
 		m.addField("SUB-TYPE", "SINGLE"); // Eg. single, long term
 		m.addField("SECOND", second);
-		m.addField("GARAGE-MAIN", garage_main);
+		m.addField("GARAGE-MAIN-RED", garage_main_red);
+		m.addField("GARAGE-MAIN-BLACK", garage_main_black);
 		m.addField("GARAGE-PLUGS", garage_plugs);
 		m.addField("LAUNDRY", laundry);
 		return m;

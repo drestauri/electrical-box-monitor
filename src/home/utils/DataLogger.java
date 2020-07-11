@@ -78,7 +78,7 @@ public class DataLogger {
 		}
 	}
 	
-	public void saveData(int garage_main, int garage_plugs, int laundry)
+	public void saveData(int garage_main_red, int garage_main_black, int garage_plugs, int laundry)
 	{
 		// This function is called once per minute to save the data
 		
@@ -104,7 +104,7 @@ public class DataLogger {
 		// Update mins if less than 60 mins have passed since we last updated (there's still some valid minute data)
 		// otherwise, reset the minutes data
 		if(minChange<60)
-			updateMins(garage_main, garage_plugs, laundry);
+			updateMins(garage_main_red, garage_main_black, garage_plugs, laundry);
 		else
 		{
 			App_EBM.log.LogMessage_High("ERROR minChange: " + Integer.toString(minChange));
@@ -161,9 +161,10 @@ public class DataLogger {
 	{
 		// Similarly if the hours have changed since we last update and at least some of the data is still valid, update
 		// The update methods for each set any invalid data to 0 and then pull the most recent data from the smaller unit in			
-		int[] d1 = getData("GARAGE-MAIN-MONTHS");
-		int[] d2 = getData("GARAGE-PLUGS-MONTHS");
-		int[] d3 = getData("LAUNDRY-MONTHS");
+		int[] d1 = getData("GARAGE-MAIN-RED-MONTHS");	
+		int[] d2 = getData("GARAGE-MAIN-BLACK-MONTHS");
+		int[] d3 = getData("GARAGE-PLUGS-MONTHS");
+		int[] d4 = getData("LAUNDRY-MONTHS");
 		
 
 		// If more than 1 month has passed, set the missed data to -1
@@ -185,19 +186,22 @@ public class DataLogger {
 			d1[j-k] = -1;
 			d2[j-k] = -1;
 			d3[j-k] = -1;
+			d4[j-k] = -1;
 			k++;
 		}
 		
 		// Put the data in, divide by 60 to put it in kW-minutes
-		d1[curVal] = sumDataPoints("GARAGE-MAIN-DAYS",60);
-		d2[curVal] = sumDataPoints("GARAGE-PLUGS-DAYS",60);
-		d3[curVal] = sumDataPoints("LAUNDRY-DAYS",60);
+		d1[curVal] = sumDataPoints("GARAGE-MAIN-RED-DAYS",60);
+		d2[curVal] = sumDataPoints("GARAGE-MAIN-BLACK-DAYS",60);
+		d3[curVal] = sumDataPoints("GARAGE-PLUGS-DAYS",60);
+		d4[curVal] = sumDataPoints("LAUNDRY-DAYS",60);
 		
-		App_EBM.log.LogMessage_High("Saving months. curVal: " + curVal + ", g-main: " + d1[curVal] + ", g-plug: " + d2[curVal] + ", laundry: " + d3[curVal]);
+		App_EBM.log.LogMessage_High("Saving months. curVal: " + curVal + ", gm-red: " + d1[curVal] + ", gm-black: " + d2[curVal] + ", g-plug: " + d3[curVal] + ", laundry: " + d4[curVal]);
 		// save the data
-		props.setProperty("GARAGE-MAIN-MONTHS", dataToString(d1));
-		props.setProperty("GARAGE-PLUGS-MONTHS", dataToString(d2));
-		props.setProperty("LAUNDRY-MONTHS", dataToString(d3));
+		props.setProperty("GARAGE-MAIN-RED-MONTHS", dataToString(d1));
+		props.setProperty("GARAGE-MAIN-BLACK-MONTHS", dataToString(d2));
+		props.setProperty("GARAGE-PLUGS-MONTHS", dataToString(d3));
+		props.setProperty("LAUNDRY-MONTHS", dataToString(d4));
 
 	}
 	
@@ -206,9 +210,10 @@ public class DataLogger {
 		
 		// Similarly if the days have changed since we last update and at least some of the data is still valid, update
 		// The update methods for each set any invalid data to 0 and then pull the most recent data from the smaller unit in			
-		int[] d1 = getData("GARAGE-MAIN-DAYS");
-		int[] d2 = getData("GARAGE-PLUGS-DAYS");
-		int[] d3 = getData("LAUNDRY-DAYS");
+		int[] d1 = getData("GARAGE-MAIN-RED-DAYS");		
+		int[] d2 = getData("GARAGE-MAIN-BLACK-DAYS");
+		int[] d3 = getData("GARAGE-PLUGS-DAYS");
+		int[] d4 = getData("LAUNDRY-DAYS");
 		
 		// Determine max days last month so we can set the invalid data
 		int leapYear = (Calendar.getInstance().get(Calendar.YEAR)-2020)%4;
@@ -265,6 +270,7 @@ public class DataLogger {
 				d1[i] = -1;
 				d2[i] = -1;
 				d3[i] = -1;
+				d4[i] = -1;
 			}
 		}
 
@@ -283,28 +289,32 @@ public class DataLogger {
 			d1[j-k] = -1;
 			d2[j-k] = -1;
 			d3[j-k] = -1;
+			d4[j-k] = -1;
 			k++;
 		}
 		
 		// Put the data in. Don't trim the data down
-		d1[curVal] = sumDataPoints("GARAGE-MAIN-HOURS",1);
-		d2[curVal] = sumDataPoints("GARAGE-PLUGS-HOURS",1);
-		d3[curVal] = sumDataPoints("LAUNDRY-HOURS",1);
+		d1[curVal] = sumDataPoints("GARAGE-MAIN-RED-HOURS",1);
+		d2[curVal] = sumDataPoints("GARAGE-MAIN-BLACK-HOURS",1);
+		d3[curVal] = sumDataPoints("GARAGE-PLUGS-HOURS",1);
+		d4[curVal] = sumDataPoints("LAUNDRY-HOURS",1);
 		
-		App_EBM.log.LogMessage_High("Saving days. curVal: " + curVal + ", g-main: " + d1[curVal] + ", g-plug: " + d2[curVal] + ", laundry: " + d3[curVal]);
+		App_EBM.log.LogMessage_High("Saving days. curVal: " + curVal + ", gm-red: " + d1[curVal] + ", gm-black: " + d2[curVal] + ", g-plug: " + d3[curVal] + ", laundry: " + d4[curVal]);
 		// save the data
-		props.setProperty("GARAGE-MAIN-DAYS", dataToString(d1));
-		props.setProperty("GARAGE-PLUGS-DAYS", dataToString(d2));
-		props.setProperty("LAUNDRY-DAYS", dataToString(d3));
+		props.setProperty("GARAGE-MAIN-RED-DAYS", dataToString(d1));
+		props.setProperty("GARAGE-MAIN-BLACK- DAYS", dataToString(d2));
+		props.setProperty("GARAGE-PLUGS-DAYS", dataToString(d3));
+		props.setProperty("LAUNDRY-DAYS", dataToString(d4));
 	}
 	
 	private void updateHours()
 	{
 		// Similarly if the hours have changed since we last update and at least some of the data is still valid, update
 		// The update methods for each set any invalid data to 0 and then pull the most recent data from the smaller unit in			
-		int[] d1 = getData("GARAGE-MAIN-HOURS");
-		int[] d2 = getData("GARAGE-PLUGS-HOURS");
-		int[] d3 = getData("LAUNDRY-HOURS");
+		int[] d1 = getData("GARAGE-MAIN-RED-HOURS");
+		int[] d2 = getData("GARAGE-MAIN-BLACK-HOURS");
+		int[] d3 = getData("GARAGE-PLUGS-HOURS");
+		int[] d4 = getData("LAUNDRY-HOURS");
 		
 
 		// If more than 1 hour has passed, set the missed data to -1
@@ -325,30 +335,30 @@ public class DataLogger {
 			d1[j-k] = -1;
 			d2[j-k] = -1;
 			d3[j-k] = -1;
+			d4[j-k] = -1;
 			k++;
 		}
-
-		App_EBM.log.LogMessage_High("DEBUG: d1.length: " + Integer.toString(d1.length));
-		App_EBM.log.LogMessage_High("DEBUG: d2.length: " + Integer.toString(d2.length));
-		App_EBM.log.LogMessage_High("DEBUG: d3.length: " + Integer.toString(d3.length));
 		
 		// Put the data in, divide it by 1000 to put it in kW-seconds
-		d1[curVal] = sumDataPoints("GARAGE-MAIN-MINUTES",1000);
-		d2[curVal] = sumDataPoints("GARAGE-PLUGS-MINUTES",1000);
-		d3[curVal] = sumDataPoints("LAUNDRY-MINUTES",1000);
+		d1[curVal] = sumDataPoints("GARAGE-MAIN-RED-MINUTES",1000);
+		d2[curVal] = sumDataPoints("GARAGE-MAIN-BLACK-MINUTES",1000);
+		d3[curVal] = sumDataPoints("GARAGE-PLUGS-MINUTES",1000);
+		d4[curVal] = sumDataPoints("LAUNDRY-MINUTES",1000);
 		
-		App_EBM.log.LogMessage_High("Saving hours. curVal: " + curVal + ", g-main: " + d1[curVal] + ", g-plug: " + d2[curVal] + ", laundry: " + d3[curVal]);
+		App_EBM.log.LogMessage_High("Saving hours. curVal: " + curVal + ", gm-red: " + d1[curVal] + ", gm-black: " + d2[curVal] + ", g-plug: " + d3[curVal] + ", laundry: " + d4[curVal]);
 		// save the data
-		props.setProperty("GARAGE-MAIN-HOURS", dataToString(d1));
-		props.setProperty("GARAGE-PLUGS-HOURS", dataToString(d2));
-		props.setProperty("LAUNDRY-HOURS", dataToString(d3));
+		props.setProperty("GARAGE-MAIN-RED-HOURS", dataToString(d1));
+		props.setProperty("GARAGE-MAIN-BLACK-HOURS", dataToString(d2));
+		props.setProperty("GARAGE-PLUGS-HOURS", dataToString(d3));
+		props.setProperty("LAUNDRY-HOURS", dataToString(d4));
 	}
 	
-	private void updateMins(int garage_main, int garage_plugs, int laundry)
+	private void updateMins(int garage_main_red, int garage_main_black, int garage_plugs, int laundry)
 	{
-		int[] d1 = getData("GARAGE-MAIN-MINUTES");
-		int[] d2 = getData("GARAGE-PLUGS-MINUTES");
-		int[] d3 = getData("LAUNDRY-MINUTES");
+		int[] d1 = getData("GARAGE-MAIN-RED-MINUTES");
+		int[] d2 = getData("GARAGE-MAIN-BLACK-MINUTES");
+		int[] d3 = getData("GARAGE-PLUGS-MINUTES");
+		int[] d4 = getData("LAUNDRY-MINUTES");
 		
 
 		// If more than 1 minute has passed, set the missed data to -1
@@ -369,17 +379,19 @@ public class DataLogger {
 			d1[j-k] = -1;
 			d2[j-k] = -1;
 			d3[j-k] = -1;
+			d4[j-k] = -1;
 			k++;
 		}
 
-		d1[curVal] = garage_main;
-		d2[curVal] = garage_plugs;
-		d3[curVal] = laundry;
+		d1[curVal] = garage_main_red;
+		d2[curVal] = garage_main_black;
+		d3[curVal] = garage_plugs;
+		d4[curVal] = laundry;
 		
-		//App_EBM.log.LogMessage_High("Saving mins. curVal: " + curVal + ", g-main: " + d1[curVal] + ", g-plug: " + d2[curVal] + ", laundry: " + d3[curVal]);
-		props.setProperty("GARAGE-MAIN-MINUTES", dataToString(d1));
-		props.setProperty("GARAGE-PLUGS-MINUTES", dataToString(d2));
-		props.setProperty("LAUNDRY-MINUTES", dataToString(d3));
+		props.setProperty("GARAGE-MAIN-RED-MINUTES", dataToString(d1));
+		props.setProperty("GARAGE-MAIN-BLACK-MINUTES", dataToString(d2));
+		props.setProperty("GARAGE-PLUGS-MINUTES", dataToString(d3));
+		props.setProperty("LAUNDRY-MINUTES", dataToString(d4));
 	}
 	
 	
@@ -416,7 +428,8 @@ public class DataLogger {
 	private void resetMins()
 	{
 		App_EBM.log.LogMessage_High("Resetting mins");
-		props.setProperty("GARAGE-MAIN-MINUTES", EMPTY_MIN_60);
+		props.setProperty("GARAGE-MAIN-RED-MINUTES", EMPTY_MIN_60);
+		props.setProperty("GARAGE-MAIN-BLACK-MINUTES", EMPTY_MIN_60);
 		props.setProperty("GARAGE-PLUGS-MINUTES", EMPTY_MIN_60);
 		props.setProperty("LAUNDRY-MINUTES", EMPTY_MIN_60);
 	}
@@ -424,7 +437,8 @@ public class DataLogger {
 	private void resetHours()
 	{
 		App_EBM.log.LogMessage_High("Resetting hours");
-		props.setProperty("GARAGE-MAIN-HOURS", EMPTY_HR_MO_24);
+		props.setProperty("GARAGE-MAIN-RED-HOURS", EMPTY_HR_MO_24);
+		props.setProperty("GARAGE-MAIN-BLACK-HOURS", EMPTY_HR_MO_24);
 		props.setProperty("GARAGE-PLUGS-HOURS", EMPTY_HR_MO_24);
 		props.setProperty("LAUNDRY-HOURS", EMPTY_HR_MO_24);
 	}
@@ -432,7 +446,8 @@ public class DataLogger {
 	private void resetDays()
 	{
 		App_EBM.log.LogMessage_High("Resetting days");
-		props.setProperty("GARAGE-MAIN-DAYS", EMPTY_DAY_31);
+		props.setProperty("GARAGE-MAIN-RED-DAYS", EMPTY_DAY_31);
+		props.setProperty("GARAGE-MAIN-BLACK-DAYS", EMPTY_DAY_31);
 		props.setProperty("GARAGE-PLUGS-DAYS", EMPTY_DAY_31);
 		props.setProperty("LAUNDRY-DAYS", EMPTY_DAY_31);
 	}
@@ -440,7 +455,8 @@ public class DataLogger {
 	private void resetMonths()
 	{
 		App_EBM.log.LogMessage_High("Resetting months");
-		props.setProperty("GARAGE-MAIN-MONTHS", EMPTY_HR_MO_24);
+		props.setProperty("GARAGE-MAIN-RED-MONTHS", EMPTY_HR_MO_24);
+		props.setProperty("GARAGE-MAIN-BLACK-MONTHS", EMPTY_HR_MO_24);
 		props.setProperty("GARAGE-PLUGS-MONTHS", EMPTY_HR_MO_24);
 		props.setProperty("LAUNDRY-MONTHS", EMPTY_HR_MO_24);
 	}

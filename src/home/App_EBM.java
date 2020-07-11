@@ -14,7 +14,6 @@ import java.util.Calendar;
 import home.gmsec.GMSECConnection;
 import home.gmsec.GMSECPublisher;
 import home.gmsec.GMSECSubscriber;
-//import home.gmsec.GMSECSubscriber;
 import home.gmsec.MsgFactory;
 import home.gmsec.callbacks.DataRequestCB;
 import home.utils.DataLogger;
@@ -22,6 +21,7 @@ import home.utils.Logger;
 import home.utils.Serial;
 
 /************ TODO *****************
+ * - Implement a message subscriber that sets the system date and time
  * - Send units along with each data message
  * - Add version to log message at boot up as well
  * - Save the last 10 or so times the app started and send that with the status message.
@@ -44,45 +44,34 @@ import home.utils.Serial;
  */
 
 public class App_EBM {
-	public static final String VERSION = "2020.4.9.1555";
+	public static final String VERSION = "2020.4.18.1609";
 	public static final String DEVICE = "PI";
 	public static final String LOCATION = "GARAGE";
 	public static final String ROLE = "EBM";
-	//private static final int DATA_AVERAGING = 11; // 1000 / 85 = 11.7 so sample 11 times to make sure we fill the array within 1s
-	private static final int LOW_POWER_OHM = 100;
-	private static final int HIGH_POWER_OHM = 64;
-	private static final int CURRENT_RATIO = 550;
 
 	//GMSEC.<SOURCE-DEVICE>.<SOURCE-ROLE>.<SOURCE-LOCATION>.<TYPE>.<SUBTYPE>.{DEST-DEVICE}.{DEST-ROLE}.{DEST-LOCATION}
 	public static final String TOPIC_DATA_REQ = "GMSEC.*.*.*.DATA.REQ.PI.EBM.GARAGE";
 	
 	public static Logger log;
 	private static DataLogger dataLog;
+	private static SerialDataProcessor sdProcessor;
 	public static GMSECConnection gmsec;
 	private static GMSECSubscriber gSub;
 	private static GMSECPublisher gPub;
 	private static MsgFactory msgFact;
 	private static DataRequestCB dataReqCB;
 	
-	private static boolean newAnalog0Data = false;
-	private static boolean newAnalog1Data = false;
-	private static boolean newAnalog2Data = false;
-	private static boolean newAnalog3Data = false;
-	private static boolean newLoopData = false;
-	private static boolean newSampleData = false;
-	private static short analog0Data = 0;
-	private static short analog1Data = 0;
-	private static short analog2Data = 0;
-	private static short analog3Data = 0;
-	private static short loopData = 0;
-	private static short sampleData = 0;
+
+
 	private static boolean isFinished = false;	
 	
 	private static int lastSecond;
-	private static short[] dataGarageMainSeconds = new short[60];
+	private static short[] dataGarageMainRedSeconds = new short[60];
+	private static short[] dataGarageMainBlackSeconds = new short[60];
 	private static short[] dataGaragePlugsSeconds = new short[60];
 	private static short[] dataLaundrySeconds = new short[60];
-	private static short dataGarageMainAvg = 0; // for averaging the data every second
+	private static short dataGarageMainRedAvg = 0; // for averaging the data every second
+	private static short dataGarageMainBlackAvg = 0; // for averaging the data every second
 	private static short dataGaragePlugsAvg = 0; // for averaging the data every second
 	private static short dataLaundryAvg = 0; // for averaging the data every second
 	private static short dataAvgCount = 1; // for averaging calculation
@@ -122,8 +111,6 @@ public class App_EBM {
 			//System.exit(-1); // Comment this out during dev
 		}
 		
-
-		
 		//============== INITIALIZE =================
 		log.LogMessage_Low("Initializing");
 		/********************************
@@ -161,6 +148,7 @@ public class App_EBM {
 		String tStr = "";
 		while(!isFinished)
 		{
+			// Here to add a loop delay if needed
 			try {
 				Thread.sleep(0,0);
 			} catch (InterruptedException e) {
@@ -168,69 +156,15 @@ public class App_EBM {
 				e.printStackTrace();
 			}
 			
-			// Check if there's data available and if so, store it in the
-			// appropriate local variable and set the flag that data is available.
-			// Data will come in unpredictable chunks and is stored in a buffer of recent values
 			if(serial.isDataAvail())
-			{
-				tStr = serial.getLastData();
-				// Handle Data
-				if(tStr.contains("A"))
-				{
-					// A = Analog Channel 0
-					analog0Data = getShort(tStr);
-					newAnalog0Data = true;
-				}
-				else if(tStr.contains("B"))
-				{
-					// B = Analog Channel 1
-					analog1Data = getShort(tStr);
-					newAnalog1Data = true;
-				}
-				else if(tStr.contains("C"))
-				{
-					// C = Analog Channel 2
-					analog2Data = getShort(tStr);
-					newAnalog2Data = true;
-				}
-				else if(tStr.contains("D"))
-				{
-					// D = Analog Channel 3
-					analog3Data = getShort(tStr);
-					newAnalog3Data = true;
-				}
-				else if(tStr.contains("L"))
-				{
-					// L = average loop time
-					// 16.67 / L = how many samples per 60Hz cycle
-					loopData = getShort(tStr);
-					newLoopData = true;
-				}
-				else if(tStr.contains("S"))
-				{
-					// S = sample period (how long we sample for when trying to find the max voltage)
-					// Sample period / 16.67 = how many 60Hz cycles we sampled
-					sampleData = getShort(tStr);
-					newSampleData = true;
-				}
-			}
+				sdProcessor.handleData(serial.getLastData());
 			
-			// Checks for whether we need to send a GMSEC message:
-			// If we have new samples from all the analog channels:
-			if (newAnalog0Data && newAnalog1Data && newAnalog2Data && newAnalog3Data)
-			{
+			if(sdProcessor.isDataReady())
 				setValues();
-			}
-			// If we have new loop and sample rate. The Arduino only sends this every second so no need to limit the GMSEC msg rate
-			if (newLoopData & newSampleData)
-			{
+			
+			if(sdProcessor.isStatusReady())
 				// Send the GMSEC Data Message
-				gPub.publish(msgFact.generateStatusMessage(VERSION, DEVICE, ROLE, LOCATION, loopData, sampleData));
-				// Reset the flags
-				newLoopData = false;
-				newSampleData = false;
-				System.out.println("Sending status");
-			}
+				gPub.publish(msgFact.generateStatusMessage(VERSION, DEVICE, ROLE, LOCATION, sdProcessor.getLoopData(), sdProcessor.getSampleData()));
 		}
 		
 		
@@ -242,112 +176,96 @@ public class App_EBM {
 		return;
 	}
 	
-	private static short getShort(String s)
-	{
-		// If we have at least 2 characters
-		if(s.length()>1)
-		{
-			// check the 2nd through the end to make sure they're numbers
-			for(int i=1; i<s.length(); i++)
-				if(s.charAt(i)<'0'||s.charAt(i)>'9')
-					return 0;
-			return Short.parseShort(s.substring(1));
-		}
-		return 0;
-	}
+
 	
 	private static void setValues()
 	{
-		// Every 85ms or so, we should receive the values from Arduino and call this function
+		/************************************************************
+		 * Multiple times per second, we should receive the values
+		 * from Arduino and call this function.
+		 * The data will be averaged over 1 second then stored for
+		 * graphing and calculating longer term data.
+		 ************************************************************/
+		short gRed = 0;
+		short gBlack = 0;
+		short gPlugs = 0;
+		short gLaundry = 0;
 		
-		// Reset the flags
-		newAnalog0Data = false;
-		newAnalog1Data = false;
-		newAnalog2Data = false;
-		newAnalog3Data = false;
+		gRed = sdProcessor.getGarageMainRed();
+		gBlack = sdProcessor.getGarageMainBlack();
+		gPlugs = sdProcessor.getGaragePlugs();
+		gLaundry = sdProcessor.getGarageLaundry();
 		
-		// Normalize the data point around 512 and if it's small or negative, just set it to 0 
-		analog0Data -= 512;
-		if(analog0Data < 0)
-			analog0Data = 0;
-		analog1Data -= 512;
-		if(analog1Data < 0)
-			analog1Data = 0;
-		analog2Data -= 512;
-		if(analog2Data < 0)
-			analog2Data = 0;
-		analog3Data -= 512;
-		if(analog3Data < 0)
-			analog3Data = 0;
 		
-		//Continuously average the data over 1 full second (reduces the weight of the old value at the beginning of a new second)
-		dataGaragePlugsAvg = (short) ((dataGaragePlugsAvg * dataAvgCount + analog0Data)/(dataAvgCount+1));
-		dataGarageMainAvg = (short) ((dataGarageMainAvg * dataAvgCount + analog1Data + analog3Data)/(dataAvgCount+1));
-		dataLaundryAvg = (short) ((dataLaundryAvg * dataAvgCount + analog2Data)/(dataAvgCount+1));
+		// Continuously average the data over 1 full second. dataAvgCount goes to 1, effectively reducing
+		// the weight of the old value at the beginning of a new second.
+		dataGarageMainRedAvg = (short) ((dataGarageMainRedAvg * dataAvgCount + gRed)/(dataAvgCount+1));
+		dataGarageMainBlackAvg = (short) ((dataGarageMainBlackAvg * dataAvgCount + gBlack)/(dataAvgCount+1));
+		dataGaragePlugsAvg = (short) ((dataGaragePlugsAvg * dataAvgCount + gPlugs)/(dataAvgCount+1));
+		dataLaundryAvg = (short) ((dataLaundryAvg * dataAvgCount + gLaundry)/(dataAvgCount+1));
 		dataAvgCount++;		
+		
 		
 		// Check if a second or more has passed
 		int now = Calendar.getInstance().get(Calendar.SECOND);
 		if(now != lastSecond)
-		{
-			boolean needSave = false;
-			if(lastSecond > now)
-				needSave = true;
-			// Store the data point in every slot up until "now" (compensates for freeze with the average)
-			int sec = lastSecond;
-			short gmAvg = convertToWatts(dataGarageMainAvg,LOW_POWER_OHM);
-			short gpAvg = convertToWatts(dataGaragePlugsAvg,LOW_POWER_OHM);
-			short lAvg = convertToWatts(dataLaundryAvg,LOW_POWER_OHM);
-			while(lastSecond!=now)
-			{
-				// Save here so that during the last loop, sec isn't updated. This way, sec is always the second before now
-				sec = lastSecond;
-				dataGarageMainSeconds[lastSecond] = gmAvg;
-				dataGaragePlugsSeconds[lastSecond] = gpAvg;
-				dataLaundrySeconds[lastSecond] = lAvg;
-				lastSecond++;
-				if(lastSecond>=60)
-					lastSecond=0;
-			}
-			
-			// EVERY SECOND PUBLISH YOUR BASIC DATA MESSAGE
-			// Send the GMSEC Data Message
-			gPub.publish(msgFact.generateSingleDataMessage(DEVICE, ROLE, LOCATION, sec, gmAvg, gpAvg, lAvg));
-			// If the last second we measured was at the end of the last minute and currently
-			// we're at the beginning, save the data
-			if(needSave)
-			{
-				needSave = false;
-				// Total up the watts this minute and save it into the data
-				int x = sumArray(dataGarageMainSeconds);
-				//x = x/10;
-				int y = sumArray(dataGaragePlugsSeconds);
-				//y = y/10;
-				int z = sumArray(dataLaundrySeconds);
-				//z = z/10;
-				dataLog.saveData(x,y,z);
-			}
-			
-
-			// Send any other periodic GMSEC messages
-			//gPub.publish(msgFact.generateSingleDataMessage(DEVICE, LOCATION, ROLE, dataGarageMainAvg, dataGaragePlugsAvg, dataLaundryAvg));
-			
-			dataAvgCount = 1; // reset the data averaging counter
-			lastSecond = now;
-		}
+			setSingleSecondOfData(now);
 	}
 	
-	private static short convertToWatts(short val, int resistance)
+	
+	private static void setSingleSecondOfData(int now)
 	{
-		// Convert to wattage manually (decided through trial and error)
-		// then clip all the max values to the nearest multiple of 5
-		//short clip = 5;
-		// Formula: (a0*5/1024 - 2.5V) * 120v * CURRENT_RATIO / RESISTANCE
-		// the 2.5V (512 analog reading) is already taken off the value outside this conversion)
-		short result = (short) ((val*5*120*CURRENT_RATIO)/(1024*resistance));
-		//result = (short) (result/clip*clip);
-		return result;
+		boolean needSave = false;
+		// Note that now should always be greater than lastSecond
+		// except when we roll over from 59 to 0 (i.e. a minute has passed)
+		// needSave is used later in this function to indicate it's time
+		// to average and save the last minute's worth of data
+		if(lastSecond > now)
+			needSave = true;
+		
+		// Store the data point in every slot up until "now" (compensates for gaps using the average)
+		int sec = lastSecond;
+		short gmRedAvg = convertGMRedToWatts(dataGarageMainRedAvg);
+		short gmBlackAvg = convertGMBlackToWatts(dataGarageMainBlackAvg);
+		short gpAvg = convertGPlugsToWatts(dataGaragePlugsAvg);
+		short lAvg = convertLaundryToWatts(dataLaundryAvg);
+		while(lastSecond!=now)
+		{
+			// Save seconds here so that during the last loop, sec isn't updated. This way, sec is always the second before now.
+			// i.e. "now" is a future data point since it's the second we are currently in. The data point we are saving here
+			// is actually for the second before "now", and we only want to fill in gaps in data that are older than that.
+			// We don't use now-1 because if now is 0, that's invalid value, and lastSecond is being modified here, so this
+			// is just an easy way to get the value of the second before "now"
+			sec = lastSecond;
+			dataGarageMainRedSeconds[lastSecond] = gmRedAvg;
+			dataGarageMainBlackSeconds[lastSecond] = gmBlackAvg;
+			dataGaragePlugsSeconds[lastSecond] = gpAvg;
+			dataLaundrySeconds[lastSecond] = lAvg;
+			lastSecond++;
+			if(lastSecond>=60)
+				lastSecond=0;
+		}
+		
+		// EVERY SECOND PUBLISH YOUR BASIC DATA MESSAGE
+		// Send the GMSEC Data Message
+		gPub.publish(msgFact.generateSingleDataMessage(DEVICE, ROLE, LOCATION, sec, gmRedAvg, gmBlackAvg, gpAvg, lAvg));
+		
+		// If we are starting a new minute, the last minute's worth of data needs to be saved
+		if(needSave)
+		{
+			needSave = false;
+			// Total up the watts this past minute and save it into the data
+			int t1 = sumArray(dataGarageMainRedSeconds);
+			int t2 = sumArray(dataGarageMainBlackSeconds);
+			int t3 = sumArray(dataGaragePlugsSeconds);
+			int t4 = sumArray(dataLaundrySeconds);
+			dataLog.saveData(t1,t2,t3,t4);
+		}
+		
+		dataAvgCount = 1; // reset the data averaging counter used for averaging data received over each second
+		lastSecond = now; // Now that 1 second has passed and we've processed the data, set lastSecond to now so we do it again after now increases
 	}
+	
 	
 	private static int sumArray(short[] s)
 	{
@@ -360,11 +278,69 @@ public class App_EBM {
 		return sum;
 	}
 	
+	
 	public static void sendFullData(String data_name, String req_id)
 	{
-		String gm = dataLog.getValue(data_name); 
-		gPub.publish(msgFact.generateDataMessage(DEVICE, ROLE, LOCATION, data_name, gm, req_id, 
+		// data_name = which string of data to retrieve from the dataLog (like "GARAGE-PLUGS-DAYS")
+		// req_id = an ID used by the requester to determine "why" this data was requested. This results
+		//			in different processing on that end.
+		// Get the data from the dataLog and store in data
+		String data = dataLog.getValue(data_name); 
+		gPub.publish(msgFact.generateDataMessage(DEVICE, ROLE, LOCATION, data_name, data, req_id, 
 				dataLog.getValue("SECOND"), dataLog.getValue("MINUTE"), dataLog.getValue("HOUR"),
 				dataLog.getValue("DAY_OF_MONTH"), dataLog.getValue("MONTH"), dataLog.getValue("YEAR")));
 	}
+	
+/***********************************************
+ * These functions were all determined using
+ * actual data samples with a power meter and
+ * then recording the raw value on the analog
+ * channel. Then a best fit curve was applied
+ * to the data and that's the formula you see
+ * here. 	
+ ***********************************************/
+	private static short convertGMRedToWatts(short val)
+	{
+		// Apply best fit trend line from testing
+		// y = -0.0015x2 + 7.4054x - 22.603
+		double value = (double)val;
+		value = 7.4054*value - 22.603 - 0.0015*value*value;
+		if (value<0)
+			value = 0;
+		return (short)value;
+	}
+	
+	private static short convertGMBlackToWatts(short val)
+	{
+		// Apply best fit trend line from testing
+		// y = 0.0163x2 + 2.3141x - 54.265
+		double value = (double)val;
+		value = 0.0163*value*value + 2.3141*value - 54.265;
+		if (value<0)
+			value = 0;
+		return (short)value;
+	}
+	
+	private static short convertGPlugsToWatts(short val)
+	{
+		// Apply best fit trend line from testing
+		// y = 0.0021x2 + 3.7582x - 60.912
+		double value = (double)val;
+		value = 0.0021*value*value + 3.7582*value - 60.912;
+		if (value<0)
+			value = 0;
+		return (short)value;
+	}
+	
+	private static short convertLaundryToWatts(short val)
+	{
+		// Apply best fit trend line from testing
+		// y = 0.0081x2 + 2.9596x - 32.459
+		double value = (double)val;
+		value = 0.0081*value*value + 2.9596*value - 32.459;
+		if (value<0)
+			value = 0;
+		return (short)value;
+	}
+
 }
