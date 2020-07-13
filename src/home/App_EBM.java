@@ -21,11 +21,8 @@ import home.utils.Logger;
 import home.utils.Serial;
 
 /************ TODO *****************
- * - Implement a message subscriber that sets the system date and time
- * - Send units along with each data message
- * - Add version to log message at boot up as well
- * - Save the last 10 or so times the app started and send that with the status message.
- * - Reduce the period for status messages to 10 seconds or something 
+ * - Implement a message subscriber that sets the system date and time 
+ * - Separate out some often used status functions (like "getRunTime") for reuse
  *  
  ************* NOTES *****************
  * Expected data from Arduino:
@@ -39,18 +36,17 @@ import home.utils.Serial;
  *  	Z99 = Heartbeat, Values: 0-99, 
  *  	- echos this app's Heartbeat value to ensure sync
  *  	- 0 from RPi means stop sending data (let serial buffer clear and resync)
- *
- *
  */
 
 public class App_EBM {
-	public static final String VERSION = "2020.4.18.1609";
-	public static final String DEVICE = "PI";
-	public static final String LOCATION = "GARAGE";
-	public static final String ROLE = "EBM";
+	private static final String VERSION = "2020.7.13.0800";
+	private static final String DEVICE = "PI";
+	private static final String LOCATION = "GARAGE";
+	private static final String ROLE = "EBM";
+	private static final long START_TIME_MILLIS = System.currentTimeMillis();
 
 	//GMSEC.<SOURCE-DEVICE>.<SOURCE-ROLE>.<SOURCE-LOCATION>.<TYPE>.<SUBTYPE>.{DEST-DEVICE}.{DEST-ROLE}.{DEST-LOCATION}
-	public static final String TOPIC_DATA_REQ = "GMSEC.*.*.*.DATA.REQ.PI.EBM.GARAGE";
+	private static final String TOPIC_DATA_REQ = "GMSEC.*.*.*.DATA.REQ.PI.EBM.GARAGE";
 	
 	public static Logger log;
 	private static DataLogger dataLog;
@@ -60,8 +56,6 @@ public class App_EBM {
 	private static GMSECPublisher gPub;
 	private static MsgFactory msgFact;
 	private static DataRequestCB dataReqCB;
-	
-
 
 	private static boolean isFinished = false;	
 	
@@ -81,6 +75,8 @@ public class App_EBM {
 		log = new Logger();
 		log.LogMessage_High("=============================");
 		log.LogMessage_High("App started");
+		log.LogMessage_High("Version: " + VERSION);
+
 		
 		//======== GET COMMAND LINE ARGUMENTS ==========
 		log.LogMessage_Low("Getting command line args");
@@ -120,6 +116,7 @@ public class App_EBM {
 		dataLog.setFile("data.properties");
 		dataLog.loadData();
 		lastSecond = Calendar.getInstance().get(Calendar.SECOND);
+		sdProcessor = new SerialDataProcessor();
 		
 		//============== Setup GMSEC ================
 		// Send the arguments to the connection class
@@ -145,7 +142,6 @@ public class App_EBM {
 		}
 		
 		//================ LOOP =====================
-		String tStr = "";
 		while(!isFinished)
 		{
 			// Here to add a loop delay if needed
@@ -164,7 +160,7 @@ public class App_EBM {
 			
 			if(sdProcessor.isStatusReady())
 				// Send the GMSEC Data Message
-				gPub.publish(msgFact.generateStatusMessage(VERSION, DEVICE, ROLE, LOCATION, sdProcessor.getLoopData(), sdProcessor.getSampleData()));
+				gPub.publish(msgFact.generateStatusMessage(VERSION, DEVICE, ROLE, LOCATION, getRunTime(), sdProcessor.getLoopData(), sdProcessor.getSampleData()));
 		}
 		
 		
@@ -176,7 +172,34 @@ public class App_EBM {
 		return;
 	}
 	
-
+	private static String getRunTime()
+	{
+		// 000d:00h:00m:00s
+		long time = System.currentTimeMillis() - START_TIME_MILLIS;
+		time = time/1000; // convert to seconds
+		String s = "";
+		
+		long t;
+		t = time/60/60/24; // to days 
+		s+=Long.toString(t);
+		s+="d:";
+		
+		time = time%(60*60*24); // subtract off days
+		t = time/60/60; // to hours 
+		s+=Long.toString(t);
+		s+="h:";
+		
+		time = time%(60*60); // subtract off hours
+		t = time/60; // to minutes 
+		s+=Long.toString(t);
+		s+="m:";
+		
+		time = time%60; // subtract off minutes
+		s+=Long.toString(time);
+		s+="s";
+		
+		return s;
+	}
 	
 	private static void setValues()
 	{
@@ -248,7 +271,7 @@ public class App_EBM {
 		
 		// EVERY SECOND PUBLISH YOUR BASIC DATA MESSAGE
 		// Send the GMSEC Data Message
-		gPub.publish(msgFact.generateSingleDataMessage(DEVICE, ROLE, LOCATION, sec, gmRedAvg, gmBlackAvg, gpAvg, lAvg));
+		gPub.publish(msgFact.generateSingleDataMessage(DEVICE, ROLE, LOCATION, sec, gmRedAvg, gmBlackAvg, gpAvg, lAvg, "Watt-Seconds"));
 		
 		// If we are starting a new minute, the last minute's worth of data needs to be saved
 		if(needSave)
@@ -285,10 +308,11 @@ public class App_EBM {
 		// req_id = an ID used by the requester to determine "why" this data was requested. This results
 		//			in different processing on that end.
 		// Get the data from the dataLog and store in data
-		String data = dataLog.getValue(data_name); 
+		String data = dataLog.getStringValue(data_name); 
 		gPub.publish(msgFact.generateDataMessage(DEVICE, ROLE, LOCATION, data_name, data, req_id, 
-				dataLog.getValue("SECOND"), dataLog.getValue("MINUTE"), dataLog.getValue("HOUR"),
-				dataLog.getValue("DAY_OF_MONTH"), dataLog.getValue("MONTH"), dataLog.getValue("YEAR")));
+				dataLog.getStringValue("SECOND"), dataLog.getStringValue("MINUTE"), dataLog.getStringValue("HOUR"),
+				dataLog.getStringValue("DAY_OF_MONTH"), dataLog.getStringValue("MONTH"), dataLog.getStringValue("YEAR"),
+				dataLog.getUnits(data_name)));
 	}
 	
 /***********************************************

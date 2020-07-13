@@ -15,10 +15,11 @@ import home.App_EBM;
 
 /*********** TODO **************
  *  MAJOR: Implement support for more than seconds 
+ *  >> Was this completed?
  *  Try to make this class implementation independent
  *  - For example, instead of specifying the name of the data to save,
  *  	try to take a String array from the user and use that to set and parse data
- * 
+ *  - Check/Finish the TODO items below
  * ****************************/
 
 public class DataLogger {
@@ -81,6 +82,7 @@ public class DataLogger {
 	public void saveData(int garage_main_red, int garage_main_black, int garage_plugs, int laundry)
 	{
 		// This function is called once per minute to save the data
+		// It also checks if the hours, days, or months rolled over so the data can be updated appropriately
 		
 		// TODO: All arrays should not include the current time so a "to date" value can be calculated when the
 		// 		mode is switched and maintained locally. The stored "to date" value can be calculated at roll over
@@ -98,7 +100,7 @@ public class DataLogger {
 		hourChange = Calendar.getInstance().get(Calendar.HOUR_OF_DAY) - Integer.parseInt(props.getProperty("HOUR")) + dayChange*24;
 		minChange = Calendar.getInstance().get(Calendar.MINUTE) - Integer.parseInt(props.getProperty("MINUTE")) + hourChange*60;
 		
-		// Each update will check if it  over or if there was excessive time that passed that requires the next
+		// Each update will check if it rolled over or if there was excessive time that passed that requires the next
 		// higher unit to be updated
 		
 		// Update mins if less than 60 mins have passed since we last updated (there's still some valid minute data)
@@ -161,10 +163,10 @@ public class DataLogger {
 	{
 		// Similarly if the hours have changed since we last update and at least some of the data is still valid, update
 		// The update methods for each set any invalid data to 0 and then pull the most recent data from the smaller unit in			
-		int[] d1 = getData("GARAGE-MAIN-RED-MONTHS");	
-		int[] d2 = getData("GARAGE-MAIN-BLACK-MONTHS");
-		int[] d3 = getData("GARAGE-PLUGS-MONTHS");
-		int[] d4 = getData("LAUNDRY-MONTHS");
+		int[] d1 = getIntData("GARAGE-MAIN-RED-MONTHS");	
+		int[] d2 = getIntData("GARAGE-MAIN-BLACK-MONTHS");
+		int[] d3 = getIntData("GARAGE-PLUGS-MONTHS");
+		int[] d4 = getIntData("LAUNDRY-MONTHS");
 		
 
 		// If more than 1 month has passed, set the missed data to -1
@@ -190,7 +192,7 @@ public class DataLogger {
 			k++;
 		}
 		
-		// Put the data in, divide by 60 to put it in kW-minutes
+		// Sum the days data (kW-seconds) and store it. Divide by 60 to put it in kW-minutes
 		d1[curVal] = sumDataPoints("GARAGE-MAIN-RED-DAYS",60);
 		d2[curVal] = sumDataPoints("GARAGE-MAIN-BLACK-DAYS",60);
 		d3[curVal] = sumDataPoints("GARAGE-PLUGS-DAYS",60);
@@ -210,10 +212,10 @@ public class DataLogger {
 		
 		// Similarly if the days have changed since we last update and at least some of the data is still valid, update
 		// The update methods for each set any invalid data to 0 and then pull the most recent data from the smaller unit in			
-		int[] d1 = getData("GARAGE-MAIN-RED-DAYS");		
-		int[] d2 = getData("GARAGE-MAIN-BLACK-DAYS");
-		int[] d3 = getData("GARAGE-PLUGS-DAYS");
-		int[] d4 = getData("LAUNDRY-DAYS");
+		int[] d1 = getIntData("GARAGE-MAIN-RED-DAYS");		
+		int[] d2 = getIntData("GARAGE-MAIN-BLACK-DAYS");
+		int[] d3 = getIntData("GARAGE-PLUGS-DAYS");
+		int[] d4 = getIntData("LAUNDRY-DAYS");
 		
 		// Determine max days last month so we can set the invalid data
 		int leapYear = (Calendar.getInstance().get(Calendar.YEAR)-2020)%4;
@@ -293,7 +295,7 @@ public class DataLogger {
 			k++;
 		}
 		
-		// Put the data in. Don't trim the data down
+		// Sum the hours data (kW-seconds) and store it. Does not reduce
 		d1[curVal] = sumDataPoints("GARAGE-MAIN-RED-HOURS",1);
 		d2[curVal] = sumDataPoints("GARAGE-MAIN-BLACK-HOURS",1);
 		d3[curVal] = sumDataPoints("GARAGE-PLUGS-HOURS",1);
@@ -311,10 +313,10 @@ public class DataLogger {
 	{
 		// Similarly if the hours have changed since we last update and at least some of the data is still valid, update
 		// The update methods for each set any invalid data to 0 and then pull the most recent data from the smaller unit in			
-		int[] d1 = getData("GARAGE-MAIN-RED-HOURS");
-		int[] d2 = getData("GARAGE-MAIN-BLACK-HOURS");
-		int[] d3 = getData("GARAGE-PLUGS-HOURS");
-		int[] d4 = getData("LAUNDRY-HOURS");
+		int[] d1 = getIntData("GARAGE-MAIN-RED-HOURS");
+		int[] d2 = getIntData("GARAGE-MAIN-BLACK-HOURS");
+		int[] d3 = getIntData("GARAGE-PLUGS-HOURS");
+		int[] d4 = getIntData("LAUNDRY-HOURS");
 		
 
 		// If more than 1 hour has passed, set the missed data to -1
@@ -339,7 +341,7 @@ public class DataLogger {
 			k++;
 		}
 		
-		// Put the data in, divide it by 1000 to put it in kW-seconds
+		// Sum the minutes data (w-seconds) and store it. Divides it by 1000 to put it in kW-seconds
 		d1[curVal] = sumDataPoints("GARAGE-MAIN-RED-MINUTES",1000);
 		d2[curVal] = sumDataPoints("GARAGE-MAIN-BLACK-MINUTES",1000);
 		d3[curVal] = sumDataPoints("GARAGE-PLUGS-MINUTES",1000);
@@ -355,10 +357,10 @@ public class DataLogger {
 	
 	private void updateMins(int garage_main_red, int garage_main_black, int garage_plugs, int laundry)
 	{
-		int[] d1 = getData("GARAGE-MAIN-RED-MINUTES");
-		int[] d2 = getData("GARAGE-MAIN-BLACK-MINUTES");
-		int[] d3 = getData("GARAGE-PLUGS-MINUTES");
-		int[] d4 = getData("LAUNDRY-MINUTES");
+		int[] d1 = getIntData("GARAGE-MAIN-RED-MINUTES");
+		int[] d2 = getIntData("GARAGE-MAIN-BLACK-MINUTES");
+		int[] d3 = getIntData("GARAGE-PLUGS-MINUTES");
+		int[] d4 = getIntData("LAUNDRY-MINUTES");
 		
 
 		// If more than 1 minute has passed, set the missed data to -1
@@ -388,6 +390,7 @@ public class DataLogger {
 		d3[curVal] = garage_plugs;
 		d4[curVal] = laundry;
 		
+		// Saves the data as is (same units as seconds: Watt-seconds)
 		props.setProperty("GARAGE-MAIN-RED-MINUTES", dataToString(d1));
 		props.setProperty("GARAGE-MAIN-BLACK-MINUTES", dataToString(d2));
 		props.setProperty("GARAGE-PLUGS-MINUTES", dataToString(d3));
@@ -395,12 +398,12 @@ public class DataLogger {
 	}
 	
 	
-	public String getValue(String data_name)
+	public String getStringValue(String data_name)
 	{
 		return props.getProperty(data_name);
 	}
 	
-	public int[] getData(String data_name)
+	public int[] getIntData(String data_name)
 	{
 		// Get the string containing the value for the specified data field
 		String str = props.getProperty(data_name);
@@ -423,6 +426,22 @@ public class DataLogger {
 		for(int i=0;i<s.length;i++)
 			d[i]=Integer.parseInt(s[i]);
 		return d;
+	}
+	
+	public String getUnits(String data_name)
+	{
+		//Minutes are in Watt-seconds, hours and days are in kW-seconds, months are kW-minutes
+		if(data_name.contains("MINUTES"))
+			return "W-Seconds";
+		else if(data_name.contains("HOURS"))
+			return "kW-Seconds";
+		else if(data_name.contains("DAYS"))
+			return "kW-Seconds";
+		else if(data_name.contains("MONTHS"))
+			return "kW-Minutes";
+		
+		App_EBM.log.LogMessage_High("Invalid data type (units): " + data_name);
+		return "invalid";
 	}
 	
 	private void resetMins()
