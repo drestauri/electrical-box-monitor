@@ -8,7 +8,7 @@ that will receive and process the data from the Arduino. This is the code runnin
 Since the data that can come across the serial interface is limited, we cannot sample four 60Hz channels very
 efficiently. Instead, the Arduino samples as fast as possible and does some local pre-processing of the data prior
 to sending relevant data over the serial interface. As we are primarily concerned with the power consumption, 
-the Arduino samples voltage every 4ms or so for some duration (e.g. 85ms) and saves only the peak reading. The peak
+the Arduino samples voltage as quickly as possible for a few cycles and saves only the peak reading. The peak
 is desireable because we are measuring a sinusoidal signal and want to know the amplitude, so we can calculate the
 current being produced by the sensor and in turn the current/power consumption of the circuit in question.
 
@@ -23,14 +23,14 @@ if necessary such as the sample rate, device state of health, Arduino's software
 
 The Electrical Box Monitor code (this code) takes the messages received from the Arduino and calculates the average 
 over 1 second. This data is stored for 60 seconds and then used to calculate and save the average consumption for 
-the past 60 minutes, 24 hours, 31 days, or 24 months. Every second, the data is also sent via a GMSEC message to a
-message queue (GMSEC Bolt) that is also running on this or another device. Another device (such as a PC) can connect
-over wi-fi to the the message queue and receive those messages and process them for displaying them on a screen or 
-sending email alerts, etc. 
+the past minute, hour, day, month, and stores the history for up to 24 months. Every second, the data is also sent 
+via a GMSEC message to a message broker (GMSEC Bolt) that is also running on this or another device. Another device
+(such as a PC) can connect over wi-fi to the the message broker and receive those messages and process them for 
+displaying them on a screen or sending email alerts, etc. 
 
 IMPORTANT: The Arduino must send values for A, B, C, and D (data from analog channels 0-3) as well as S, L (status
 information for sample rate and average loop time) in order for the data or status GMSEC message to be sent. If no
-data or only partial data is received, it is not sent. When this code receives all 4 values, it will add it to an
+data or only partial data is received, it is not send. When this code receives all 4 values, it will add it to an
 average running value and that average value gets sent every second so that we portray the power consumption measured
 over 1 second as accurately as possible rather than just the max value for that one second. Modify this to fit your
 application or for testing as you see fit.
@@ -54,7 +54,7 @@ Launch bolt by running the following command:
 java -jar %GMSEC_HOME%\bin\bolt.jar
 ```
 
-The project should already be set to connect to a locally hosted Bolt message queue, but if not update App_EBM.java
+The project should already be set to connect to a locally hosted Bolt message broker, but if not update App_EBM.java
 as follows to set the default values for gmsec_args. Also, connect your Arduino and make sure the default COM port
 matches the port for your Arduino:
 ```java
@@ -62,7 +62,7 @@ String commPort = "COM3";
 String gmsec_args[] = {"subscribe", "mw-id=bolt", "server=localhost:9100"}; 
 ```
 
-Run the project and make sure it connects to the Arduino and message queue. Once everything works on the PC, export 
+Run the project and make sure it connects to the Arduino and message broker. Once everything works on the PC, export 
 the project as a Runnable JAR file. Transfer the JAR file to your Raspberry Pi to a folder like
 /home/pi/Desktop/project. 
 
@@ -70,7 +70,7 @@ Assuming you've obtained the ARM build of the GMSEC API, copy the files to the R
 such as /home/pi/Desktop/GMSEC_API. 
 
 # Usage
-Now that all the files are on your Linux system/Raspberry Pi, launch the GMSEC Bolt message queue using the following command:
+Now that all the files are on your Linux system/Raspberry Pi, launch the GMSEC Bolt message broker using the following command:
 ```
 sudo java -jar /home/pi/Desktop/GMSEC_API/bin/bolt.jar
 ```

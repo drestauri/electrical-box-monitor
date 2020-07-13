@@ -16,10 +16,13 @@ import home.App_EBM;
 /*********** TODO **************
  *  MAJOR: Implement support for more than seconds 
  *  >> Was this completed?
- *  Try to make this class implementation independent
- *  - For example, instead of specifying the name of the data to save,
+ *  - Try to make this class implementation independent
+ *    > For example, instead of specifying the name of the data to save,
  *  	try to take a String array from the user and use that to set and parse data
  *  - Check/Finish the TODO items below
+ *  - Implement better error handling for data that doesn't exist/is incorrectly spelled
+ *    > Such as converting to all caps
+ *    > Returning an error string and handling in the main code
  * ****************************/
 
 public class DataLogger {

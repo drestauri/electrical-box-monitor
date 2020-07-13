@@ -23,6 +23,7 @@ import home.utils.Serial;
 /************ TODO *****************
  * - Implement a message subscriber that sets the system date and time 
  * - Separate out some often used status functions (like "getRunTime") for reuse
+ * - Change to send last data point and status every second instead of only if new data is available
  *  
  ************* NOTES *****************
  * Expected data from Arduino:
