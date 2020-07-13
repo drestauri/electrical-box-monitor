@@ -30,7 +30,7 @@ displaying them on a screen or sending email alerts, etc.
 
 IMPORTANT: The Arduino must send values for A, B, C, and D (data from analog channels 0-3) as well as S, L (status
 information for sample rate and average loop time) in order for the data or status GMSEC message to be sent. If no
-data or only partial data is received, it is not send. When this code receives all 4 values, it will add it to an
+data or only partial data is received, it is not sent. When this code receives all 4 values, it will add it to an
 average running value and that average value gets sent every second so that we portray the power consumption measured
 over 1 second as accurately as possible rather than just the max value for that one second. Modify this to fit your
 application or for testing as you see fit.
