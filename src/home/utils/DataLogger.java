@@ -14,8 +14,7 @@ import java.util.Properties;
 import home.App_EBM;
 
 /*********** TODO **************
- *  MAJOR: Implement support for more than seconds 
- *  >> Was this completed?
+ *  - Check if the new backup data file thing works...
  *  - Try to make this class implementation independent
  *    > For example, instead of specifying the name of the data to save,
  *  	try to take a String array from the user and use that to set and parse data
@@ -27,6 +26,8 @@ import home.App_EBM;
 
 public class DataLogger {
 
+	private final static String BACKUP_FILE_NAME = "backup_data.properties";
+	private static String fileName;
 	private static Properties props;
 	private static File dataFile;
 	private final String EMPTY_MIN_60 = "-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1";
@@ -38,29 +39,45 @@ public class DataLogger {
 	private int hourChange = 0;
 	private int minChange = 0;
 	
-	public DataLogger()
+	public DataLogger(String file_name)
 	{
 		props = new Properties();
-	}
-	
-	public void setFile(String file)
-	{
-		dataFile=new File(file);
+		fileName = file_name;
+		dataFile=new File(fileName);
 	}
 	
 	public void loadData()
 	{
-		File tmpDir = new File("data.properties");
-		App_EBM.log.LogMessage_High("Props file length: " + tmpDir.length());
-		if(!tmpDir.exists())
+		// Open new data.properties file
+		//File tmpDir = new File(dataFile.getName());
+		
+		// Log the file length (was mostly used for debugging)
+		App_EBM.log.LogMessage_High("Props file length: " + dataFile.length());
+		
+		// Perform some quick checks on the file
+		if(!dataFile.exists())
 		{
+			// If the file doesn't exist, generate a new file
 			App_EBM.log.LogMessage_High("Props file not found");
 			genDefaultDataFile();
-		}else if(tmpDir.length() < 1000)
+		}else if(dataFile.length() < 1000)
 		{
-			App_EBM.log.LogMessage_High("Props file empty or invalid");
-			genDefaultDataFile();
+			// If the file exists but appears to be invalid, attempt to restore from a copy of the file
+			dataFile = new File(BACKUP_FILE_NAME);
+			if(!dataFile.exists())
+			{
+				// If the backup doesn't exist, then generate the default file
+				App_EBM.log.LogMessage_High("Backup file not found");
+				genDefaultDataFile();
+			}else if(dataFile.length() < 1000)
+			{
+				// Or if the file appears to be invalid, generate the default file
+				App_EBM.log.LogMessage_High("Backup file empty or invalid");
+				genDefaultDataFile();
+			}
 		}
+		
+		// At this point, dataFile should be a valid data file and point to the original target data file
 		
 		InputStream is;
 		try {
@@ -69,15 +86,15 @@ public class DataLogger {
 				props.loadFromXML(is);
 		} catch (FileNotFoundException e) {
 			System.out.println("Props file not found");
-			App_EBM.log.LogMessage_High("Error: Props file not found");
+			App_EBM.log.LogMessage_High("Error: Props file not found after checking and generating new file");
 			e.printStackTrace();
 		} catch (InvalidPropertiesFormatException e) {
 			System.out.println("Props file invalid");
-			App_EBM.log.LogMessage_High("Error: Props file invalid");
+			App_EBM.log.LogMessage_High("Error: Props file invalid after checking and generating new file");
 			e.printStackTrace();
 		} catch (IOException e) {
 			System.out.println("Props file IO error");
-			App_EBM.log.LogMessage_High("Error: Props file IO error");
+			App_EBM.log.LogMessage_High("Error: Props file IO error after checking and generating new file");
 			e.printStackTrace();
 		}
 	}
@@ -486,6 +503,8 @@ public class DataLogger {
 	public void genDefaultDataFile()
 	{
 		App_EBM.log.LogMessage_High("Generating new data properties file");
+		// Set the data file back to the original file
+		dataFile = new File(fileName);
 		props.setProperty("YEAR", Integer.toString(Calendar.getInstance().get(Calendar.YEAR)));
 		props.setProperty("MONTH", Integer.toString(Calendar.getInstance().get(Calendar.MONTH)+1));
 		props.setProperty("DAY_OF_MONTH", Integer.toString(Calendar.getInstance().get(Calendar.DAY_OF_MONTH)));
