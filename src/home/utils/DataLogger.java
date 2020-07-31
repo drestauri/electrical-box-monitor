@@ -7,6 +7,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Calendar;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Properties;
@@ -48,6 +51,26 @@ public class DataLogger {
 	
 	public void loadData()
 	{
+		/****************************
+		 *  > Check normal file exist, if not create a new file and skip to loading properties
+		 *  > If normal file exists, check length (as indication of validity)
+		 *  > If valid: skip to loading properties
+		 *  > If invalid: check if backup file exists, if not create a new file and exit to loading properties
+		 *  > If backup file exists, check length
+		 *  > If valid: skip to loading properties
+		 *  > If invalid: create a new file and exit to loading properties
+		 * 
+		 * LOADING PROPERTIES: dataFile may be the normal file or backup at this point
+		 *  > Create input stream
+		 *  > Load Properties from XML
+		 * 
+		 * dataFile may still point to the backup so we call saveDataFile() which:
+		 *  > Resets to the normal data file
+		 *  > Copies the data file to the backup file (overwrites)
+		 *  > Opens, saves, and closes data file
+		 *  (no need to delete the backup)
+		 */
+		
 		// Open new data.properties file
 		//File tmpDir = new File(dataFile.getName());
 		
@@ -77,8 +100,9 @@ public class DataLogger {
 			}
 		}
 		
-		// At this point, dataFile should be a valid data file and point to the original target data file
+		// At this point, dataFile should be a valid data file
 		
+		// LOADING PROPERTIES:
 		InputStream is;
 		try {
 			is = new FileInputStream(dataFile);
@@ -156,6 +180,8 @@ public class DataLogger {
 			resetMonths();
 		}
 		
+		saveDataFile();
+		/*
 		// Set the time stamp
 		props.setProperty("YEAR", Integer.toString(Calendar.getInstance().get(Calendar.YEAR)));
 		props.setProperty("MONTH", Integer.toString(Calendar.getInstance().get(Calendar.MONTH)+1));
@@ -177,6 +203,7 @@ public class DataLogger {
 			App_EBM.log.LogMessage_High("Error: Can't save. Other error");
 			e.printStackTrace();
 		}
+		*/
 	}
 	
 	private void updateMonths()
@@ -502,9 +529,35 @@ public class DataLogger {
 	
 	public void genDefaultDataFile()
 	{
-		App_EBM.log.LogMessage_High("Generating new data properties file");
-		// Set the data file back to the original file
+		App_EBM.log.LogMessage_High("Resetting data");
+		resetMonths();
+		resetDays();
+		resetHours();
+		resetMins();
+		
+		saveDataFile();
+	}
+	
+	public void saveDataFile()
+	{
+		/*
+		 * > Resets to the normal data file
+		 * > Creates backup
+		 * > Opens, Saves, and closes
+		 */
+		 
+		App_EBM.log.LogMessage_High("Setting time and saving Data File");
+		
+		// Make sure we're saving to the original file
 		dataFile = new File(fileName);
+
+		// Copy current file to the backup file
+		try {
+			Files.copy(dataFile.toPath(), Paths.get(dataFile.getParent() + "/" + BACKUP_FILE_NAME), StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		
 		props.setProperty("YEAR", Integer.toString(Calendar.getInstance().get(Calendar.YEAR)));
 		props.setProperty("MONTH", Integer.toString(Calendar.getInstance().get(Calendar.MONTH)+1));
 		props.setProperty("DAY_OF_MONTH", Integer.toString(Calendar.getInstance().get(Calendar.DAY_OF_MONTH)));
@@ -512,16 +565,13 @@ public class DataLogger {
 		props.setProperty("HOUR", Integer.toString(Calendar.getInstance().get(Calendar.HOUR_OF_DAY)));
 		props.setProperty("MINUTE", Integer.toString(Calendar.getInstance().get(Calendar.MINUTE)));
 		props.setProperty("SECOND", Integer.toString(Calendar.getInstance().get(Calendar.SECOND)));
-		resetMonths();
-		resetDays();
-		resetHours();
-		resetMins();
 		
-		// Write the data to the file
+		// Open the data to the file, write data, and close it
 		OutputStream os;
 		try {
 			os = new FileOutputStream(dataFile);
 			props.storeToXML(os, "Minutes are in watt-seconds, hours and days are in kW-seconds, months are kW-minutes", "UTF-8");
+			os.close();
 		} catch (FileNotFoundException e) {
 			App_EBM.log.LogMessage_High("Error: Can't save newly generated props file due to file not found error.");
 			e.printStackTrace();
