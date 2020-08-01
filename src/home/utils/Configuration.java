@@ -28,7 +28,7 @@ public class Configuration {
 		{
 			// If the file doesn't exist, generate a new file
 			App_EBM.log.LogMessage_High("Configuration file not found");
-		}else if(configFile.length() < 1000)
+		}else if(configFile.length() < 100)
 		{
 			// Or if the file appears to be invalid, generate the default file
 			App_EBM.log.LogMessage_High("Configuration file empty or invalid");

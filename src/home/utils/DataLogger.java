@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Calendar;
@@ -549,12 +550,14 @@ public class DataLogger {
 		
 		// Make sure we're saving to the original file
 		dataFile = new File(fileName);
+		Path folder = Paths.get(dataFile.toURI()).getParent();
 
 		// Copy current file to the backup file
 		try {
-			Files.copy(dataFile.toPath(), Paths.get(dataFile.getParent() + "/" + BACKUP_FILE_NAME), StandardCopyOption.REPLACE_EXISTING);
+			Files.copy(dataFile.toPath(), Paths.get(folder.toString() + "/" + BACKUP_FILE_NAME), StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e1) {
 			e1.printStackTrace();
+			App_EBM.log.LogMessage_High("Failed to copy properties file to backup file");
 		}
 		
 		props.setProperty("YEAR", Integer.toString(Calendar.getInstance().get(Calendar.YEAR)));

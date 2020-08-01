@@ -43,7 +43,7 @@ import home.utils.Serial;
  */
 
 public class App_EBM {
-	private static final String VERSION = "2020.7.31.1700";
+	private static final String VERSION = "2020.8.1.1500";
 	private static final long START_TIME_MILLIS = System.currentTimeMillis();
 	
 	public static Logger log;
