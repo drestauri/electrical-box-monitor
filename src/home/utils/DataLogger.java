@@ -85,6 +85,7 @@ public class DataLogger {
 			genDefaultDataFile();
 		}else if(dataFile.length() < 1000)
 		{
+			App_EBM.log.LogMessage_High("Props file empty or invalid. Attempting to restore from backup");
 			// If the file exists but appears to be invalid, attempt to restore from a copy of the file
 			dataFile = new File(BACKUP_FILE_NAME);
 			if(!dataFile.exists())
@@ -545,8 +546,6 @@ public class DataLogger {
 		 * > Creates backup
 		 * > Opens, Saves, and closes
 		 */
-		 
-		App_EBM.log.LogMessage_High("Setting time and saving Data File");
 		
 		// Make sure we're saving to the original file
 		dataFile = new File(fileName);

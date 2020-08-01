@@ -16,6 +16,7 @@ import home.gmsec.GMSECPublisher;
 import home.gmsec.GMSECSubscriber;
 import home.gmsec.MsgFactory;
 import home.gmsec.callbacks.DataRequestCB;
+import home.utils.Configuration;
 import home.utils.DataLogger;
 import home.utils.Logger;
 import home.utils.Serial;
@@ -42,14 +43,8 @@ import home.utils.Serial;
  */
 
 public class App_EBM {
-	private static final String VERSION = "2020.7.13.0800";
-	private static final String DEVICE = "PI";
-	private static final String LOCATION = "GARAGE";
-	private static final String ROLE = "EBM";
+	private static final String VERSION = "2020.7.31.1700";
 	private static final long START_TIME_MILLIS = System.currentTimeMillis();
-
-	//GMSEC.<SOURCE-DEVICE>.<SOURCE-ROLE>.<SOURCE-LOCATION>.<TYPE>.<SUBTYPE>.{DEST-DEVICE}.{DEST-ROLE}.{DEST-LOCATION}
-	private static final String TOPIC_DATA_REQ = "GMSEC.*.*.*.DATA.REQ.PI.EBM.GARAGE";
 	
 	public static Logger log;
 	private static DataLogger dataLog;
@@ -61,6 +56,8 @@ public class App_EBM {
 	private static DataRequestCB dataReqCB;
 
 	private static boolean isFinished = false;	
+	
+	private static Configuration config;
 	
 	private static int lastSecond;
 	private static short[] dataGarageMainRedSeconds = new short[60];
@@ -77,14 +74,17 @@ public class App_EBM {
 	{
 		log = new Logger();
 		log.LogMessage_High("=============================");
-		log.LogMessage_High("App started");
+		log.LogMessage_High("App started. Loading config.");
+		
+		config = new Configuration("config.properties");
+		
 		log.LogMessage_High("Version: " + VERSION);
 
 		
 		//======== GET COMMAND LINE ARGUMENTS ==========
 		log.LogMessage_Low("Getting command line args");
-		String commPort = "COM3";
-		String gmsec_args[] = {"subscribe", "mw-id=bolt", "server=localhost:9100"};
+		String commPort = config.getDefaultCommPort();
+		String gmsec_args[] = {config.getGmsecMode(), "mw-id="+config.getGmsecMw(), config.getGmsecServer()};
 		
 		if (args.length == 1)
 		{
@@ -130,7 +130,7 @@ public class App_EBM {
 		
 		dataReqCB = new DataRequestCB();
 		gSub = new GMSECSubscriber(gmsec.getConnMgr());
-		gSub.subscribe(TOPIC_DATA_REQ, dataReqCB);
+		gSub.subscribe(config.getDataRequestTopic(), dataReqCB);
 		
 		// Create a new message factory for generating messages
 		msgFact = new MsgFactory();
@@ -140,7 +140,7 @@ public class App_EBM {
 		if(!serial.isConnected())
 		{
 			// Send GMSEC Message
-			gPub.publish(msgFact.generateWarningMessage(DEVICE, ROLE, LOCATION, "Could not find desired COM port."));
+			gPub.publish(msgFact.generateWarningMessage(config.getDevice(), config.getRole(), config.getLocation(), "Could not find desired COM port."));
 		}
 		
 		//================ LOOP =====================
@@ -162,7 +162,7 @@ public class App_EBM {
 			
 			if(sdProcessor.isStatusReady())
 				// Send the GMSEC Data Message
-				gPub.publish(msgFact.generateStatusMessage(VERSION, DEVICE, ROLE, LOCATION, getRunTime(), sdProcessor.getLoopData(), sdProcessor.getSampleData()));
+				gPub.publish(msgFact.generateStatusMessage(VERSION, config.getDevice(), config.getRole(), config.getLocation(), getRunTime(), sdProcessor.getLoopData(), sdProcessor.getSampleData()));
 		}
 		
 		
@@ -273,7 +273,7 @@ public class App_EBM {
 		
 		// EVERY SECOND PUBLISH YOUR BASIC DATA MESSAGE
 		// Send the GMSEC Data Message
-		gPub.publish(msgFact.generateSingleDataMessage(DEVICE, ROLE, LOCATION, sec, gmRedAvg, gmBlackAvg, gpAvg, lAvg, "Watt-Seconds"));
+		gPub.publish(msgFact.generateSingleDataMessage(config.getDevice(), config.getRole(), config.getLocation(), sec, gmRedAvg, gmBlackAvg, gpAvg, lAvg, "Watt-Seconds"));
 		
 		// If we are starting a new minute, the last minute's worth of data needs to be saved
 		if(needSave)
@@ -311,7 +311,7 @@ public class App_EBM {
 		//			in different processing on that end.
 		// Get the data from the dataLog and store in data
 		String data = dataLog.getStringValue(data_name); 
-		gPub.publish(msgFact.generateDataMessage(DEVICE, ROLE, LOCATION, data_name, data, req_id, 
+		gPub.publish(msgFact.generateDataMessage(config.getDevice(), config.getRole(), config.getLocation(), data_name, data, req_id, 
 				dataLog.getStringValue("SECOND"), dataLog.getStringValue("MINUTE"), dataLog.getStringValue("HOUR"),
 				dataLog.getStringValue("DAY_OF_MONTH"), dataLog.getStringValue("MONTH"), dataLog.getStringValue("YEAR"),
 				dataLog.getUnits(data_name)));
