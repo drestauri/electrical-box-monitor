@@ -30,7 +30,6 @@ import home.App_EBM;
 public class Serial implements SerialPortDataListener{
 	private static final int DATA_BUFFER_SIZE = 16;	// max number of characters to pull from the serial interface
 	private static final int DATA_HISTORY_SIZE = 8; // max last values to save
-	//private static final int TIME_OUT = 2000;
 	private static final int DATA_RATE = 115200;
 	private static String PORT_NAME;
 	
@@ -52,15 +51,9 @@ public class Serial implements SerialPortDataListener{
 	public Serial(String com){
 		PORT_NAME = com;
 		initialize();
-		Thread t=new Thread() {
-			public void run() {
-				try {Thread.sleep(1000000);} catch (InterruptedException ie) {}
-			}
-		};
 		
 		if (serialPort != null)
 		{
-			t.start();
 			System.out.println("Serial Comms Started");
 		}
 	}
