@@ -40,6 +40,8 @@ import home.utils.Serial;
  *  	Z99 = Heartbeat, Values: 0-99, 
  *  	- echos this app's Heartbeat value to ensure sync
  *  	- 0 from RPi means stop sending data (let serial buffer clear and resync)
+ *  
+ *  TEST FOR JENKINS!!!
  */
 
 public class App_EBM {
