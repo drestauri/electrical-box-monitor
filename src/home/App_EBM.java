@@ -180,7 +180,7 @@ public class App_EBM {
 	{
 		// 000d:00h:00m:00s
 		long time = System.currentTimeMillis() - START_TIME_MILLIS;
-		time = time/1000; // convert to seconds
+		time = time/10000; // convert to seconds 1000
 		String s = "";
 		
 		long t;
