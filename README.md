@@ -24,7 +24,7 @@ if necessary such as the sample rate, device state of health, Arduino's software
 The Electrical Box Monitor code (this code) takes the messages received from the Arduino and calculates the average 
 over 1 second. This data is stored for 60 seconds and then used to calculate and save the average consumption for 
 the past minute, hour, day, month, and stores the history for up to 24 months. Every second, the data is also sent 
-via a GMSEC message to a message broker (GMSEC Bolt) that is also running on this or another device. Another device
+via a GMSEC message to a message broker that is also running on this or another device. Another device
 (such as a PC) can connect over wi-fi to the the message broker and receive those messages and process them for 
 displaying them on a screen or sending email alerts, etc. 
 
