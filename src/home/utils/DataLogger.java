@@ -17,6 +17,15 @@ import java.util.Properties;
 
 import home.App_EBM;
 
+/*********** NOTES ************
+ * This summary was written from memory and should be confirmed.
+ * This is a custom class for the electrical box monitor.
+ * Upon starting, it reads in the data.properties file which contains the history of the electrical usage.
+ * In case of errors/interruptions, it always tries to first save the current data file to a backup file when saving,
+ * and load from the backup file if the main file is empty, missing, etc.
+ * If both fail, a new file is created using the "EMPTY_" strings
+ ******************************/
+
 /*********** TODO **************
  *  - Check if the new backup data file thing works...
  *  - Try to make this class implementation independent
@@ -76,28 +85,28 @@ public class DataLogger {
 		//File tmpDir = new File(dataFile.getName());
 		
 		// Log the file length (was mostly used for debugging)
-		App_EBM.log.LogMessage_High("Props file length: " + dataFile.length());
+		App_EBM.log.LogMessage("Props file length: " + dataFile.length());
 		
 		// Perform some quick checks on the file
 		if(!dataFile.exists())
 		{
 			// If the file doesn't exist, generate a new file
-			App_EBM.log.LogMessage_High("Props file not found");
+			App_EBM.log.LogMessage("Props file not found");
 			genDefaultDataFile();
 		}else if(dataFile.length() < 1000)
 		{
-			App_EBM.log.LogMessage_High("Props file empty or invalid. Attempting to restore from backup");
+			App_EBM.log.LogMessage("Props file empty or invalid. Attempting to restore from backup");
 			// If the file exists but appears to be invalid, attempt to restore from a copy of the file
 			dataFile = new File(BACKUP_FILE_NAME);
 			if(!dataFile.exists())
 			{
 				// If the backup doesn't exist, then generate the default file
-				App_EBM.log.LogMessage_High("Backup file not found");
+				App_EBM.log.LogMessage("Backup file not found");
 				genDefaultDataFile();
 			}else if(dataFile.length() < 1000)
 			{
 				// Or if the file appears to be invalid, generate the default file
-				App_EBM.log.LogMessage_High("Backup file empty or invalid");
+				App_EBM.log.LogMessage("Backup file empty or invalid");
 				genDefaultDataFile();
 			}
 		}
@@ -112,15 +121,15 @@ public class DataLogger {
 				props.loadFromXML(is);
 		} catch (FileNotFoundException e) {
 			System.out.println("Props file not found");
-			App_EBM.log.LogMessage_High("Error: Props file not found after checking and generating new file");
+			App_EBM.log.LogMessage("Error: Props file not found after checking and generating new file");
 			e.printStackTrace();
 		} catch (InvalidPropertiesFormatException e) {
 			System.out.println("Props file invalid");
-			App_EBM.log.LogMessage_High("Error: Props file invalid after checking and generating new file");
+			App_EBM.log.LogMessage("Error: Props file invalid after checking and generating new file");
 			e.printStackTrace();
 		} catch (IOException e) {
 			System.out.println("Props file IO error");
-			App_EBM.log.LogMessage_High("Error: Props file IO error after checking and generating new file");
+			App_EBM.log.LogMessage("Error: Props file IO error after checking and generating new file");
 			e.printStackTrace();
 		}
 	}
@@ -138,10 +147,14 @@ public class DataLogger {
 		// we can assume a data point is needed. Make sure to consider the case that we haven't saved in days. Fill missing
 		// data with 0s except for maybe the minutes (needs some thought)
 		
-		// Leap years: 2020, 2024, 2028. If it's the year after a leap year, I want to add 366 days not 365
-		int leapYear = (Calendar.getInstance().get(Calendar.YEAR) - 2021)%4 == 0 ? 1 : 0;
+		
 		yearChange = Calendar.getInstance().get(Calendar.YEAR) - Integer.parseInt(props.getProperty("YEAR"));
 		monthChange = Calendar.getInstance().get(Calendar.MONTH)+1 - Integer.parseInt(props.getProperty("MONTH")) + yearChange*12;
+		// Leap years: 2020, 2024, 2028. If it's the year after a leap year, I want to add 366 days not 365 (if there was a year change)
+		// to the number of days that have changed. For example on Jan 1st the day after a leap year:
+		// dayChange = 1 - 366 (last value in data log if the year just changed) + 1*365 + 1 (for the leap year)
+		int leapYear = (Calendar.getInstance().get(Calendar.YEAR) - 2021)%4 == 0 ? 1 : 0;
+		leapYear = yearChange>0 ? leapYear : 0; // If I don't add this check, it will add 1 to the day change every time I save the data, resulting in 1441 mins difference
 		dayChange = Calendar.getInstance().get(Calendar.DAY_OF_YEAR) - Integer.parseInt(props.getProperty("DAY_OF_YEAR")) + yearChange*365 + leapYear;
 		hourChange = Calendar.getInstance().get(Calendar.HOUR_OF_DAY) - Integer.parseInt(props.getProperty("HOUR")) + dayChange*24;
 		minChange = Calendar.getInstance().get(Calendar.MINUTE) - Integer.parseInt(props.getProperty("MINUTE")) + hourChange*60;
@@ -155,7 +168,7 @@ public class DataLogger {
 			updateMins(garage_main_red, garage_main_black, garage_plugs, laundry);
 		else
 		{
-			App_EBM.log.LogMessage_High("ERROR minChange: " + Integer.toString(minChange));
+			App_EBM.log.LogMessage("ERROR minChange: " + Integer.toString(minChange));
 			resetMins();
 		}
 		// Similarly if the hours have changed since we last update and at least some of the data is still valid, update
@@ -164,21 +177,21 @@ public class DataLogger {
 			updateHours();
 		else if(hourChange>=24)
 		{
-			App_EBM.log.LogMessage_High("ERROR hourChange: " + Integer.toString(hourChange));
+			App_EBM.log.LogMessage("ERROR hourChange: " + Integer.toString(hourChange));
 			resetHours();
 		}
 		if(dayChange>0 && dayChange<30)
 			updateDays();
 		else if(dayChange>=30)
 		{
-			App_EBM.log.LogMessage_High("ERROR dayChange: " + Integer.toString(dayChange));
+			App_EBM.log.LogMessage("ERROR dayChange: " + Integer.toString(dayChange));
 			resetDays();
 		}
 		if(monthChange>0 && monthChange<24)
 			updateMonths();
 		else if(monthChange>=24)
 		{
-			App_EBM.log.LogMessage_High("ERROR monthChange: " + Integer.toString(monthChange));
+			App_EBM.log.LogMessage("ERROR monthChange: " + Integer.toString(monthChange));
 			resetMonths();
 		}
 		
@@ -199,10 +212,10 @@ public class DataLogger {
 			os = new FileOutputStream(dataFile);
 			props.storeToXML(os, "Minutes are in watt-seconds, hours and days are in kW-seconds, months are kW-minutes", "UTF-8");
 		} catch (FileNotFoundException e) {
-			App_EBM.log.LogMessage_High("Error: Can't save. Props file not found");
+			App_EBM.log.LogMessage("Error: Can't save. Props file not found");
 			e.printStackTrace();
 		} catch (IOException e) {
-			App_EBM.log.LogMessage_High("Error: Can't save. Other error");
+			App_EBM.log.LogMessage("Error: Can't save. Other error");
 			e.printStackTrace();
 		}
 		*/
@@ -247,7 +260,7 @@ public class DataLogger {
 		d3[curVal] = sumDataPoints("GARAGE-PLUGS-DAYS",60);
 		d4[curVal] = sumDataPoints("LAUNDRY-DAYS",60);
 		
-		App_EBM.log.LogMessage_High("Saving months. curVal: " + curVal + ", gm-red: " + d1[curVal] + ", gm-black: " + d2[curVal] + ", g-plug: " + d3[curVal] + ", laundry: " + d4[curVal]);
+		App_EBM.log.LogMessage("Saving months. curVal: " + curVal + ", gm-red: " + d1[curVal] + ", gm-black: " + d2[curVal] + ", g-plug: " + d3[curVal] + ", laundry: " + d4[curVal]);
 		// save the data
 		props.setProperty("GARAGE-MAIN-RED-MONTHS", dataToString(d1));
 		props.setProperty("GARAGE-MAIN-BLACK-MONTHS", dataToString(d2));
@@ -303,7 +316,8 @@ public class DataLogger {
 			// April, June, September, November
 		}
 		
-		// DAY_OF_MONTH is from 1-31 so need to subtract 1 to get correct index and another 1 save the data in last day
+		// DAY_OF_MONTH is from 1-31 so need to subtract 1 to get correct index and 
+		// subtract another 1 to save the data in the previous day 
 		int curVal = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)-2;
 		if (curVal < 0)
 			curVal = lastMax-1; // might not go to the end of the array for days of month
@@ -326,16 +340,17 @@ public class DataLogger {
 		}
 
 		// If more than 1 day has passed, set the missed data to -1
-		int j = curVal;
+		int j = curVal; // curVal represents the index for yesterday
 		int k = 1;
+		// Loop for the number of days that have passed. If only 1 days has passed, skip this because we are on target
 		for(int i = 1; i<dayChange; i++)
 		{
 			if(j-k < 0)
 			{
 				// if we reach the begin of the array, start from where the last month's
 				// data would have ended
-				j = lastMax;
-				k=0;
+				j = lastMax; // 28-31
+				k=1; // reset k
 			}
 			d1[j-k] = -1;
 			d2[j-k] = -1;
@@ -350,7 +365,7 @@ public class DataLogger {
 		d3[curVal] = sumDataPoints("GARAGE-PLUGS-HOURS",1);
 		d4[curVal] = sumDataPoints("LAUNDRY-HOURS",1);
 		
-		App_EBM.log.LogMessage_High("Saving days. curVal: " + curVal + ", gm-red: " + d1[curVal] + ", gm-black: " + d2[curVal] + ", g-plug: " + d3[curVal] + ", laundry: " + d4[curVal]);
+		App_EBM.log.LogMessage("Saving days. curVal: " + curVal + ", gm-red: " + d1[curVal] + ", gm-black: " + d2[curVal] + ", g-plug: " + d3[curVal] + ", laundry: " + d4[curVal]);
 		// save the data
 		props.setProperty("GARAGE-MAIN-RED-DAYS", dataToString(d1));
 		props.setProperty("GARAGE-MAIN-BLACK- DAYS", dataToString(d2));
@@ -396,7 +411,7 @@ public class DataLogger {
 		d3[curVal] = sumDataPoints("GARAGE-PLUGS-MINUTES",1000);
 		d4[curVal] = sumDataPoints("LAUNDRY-MINUTES",1000);
 		
-		App_EBM.log.LogMessage_High("Saving hours. curVal: " + curVal + ", gm-red: " + d1[curVal] + ", gm-black: " + d2[curVal] + ", g-plug: " + d3[curVal] + ", laundry: " + d4[curVal]);
+		App_EBM.log.LogMessage("Saving hours. curVal: " + curVal + ", gm-red: " + d1[curVal] + ", gm-black: " + d2[curVal] + ", g-plug: " + d3[curVal] + ", laundry: " + d4[curVal]);
 		// save the data
 		props.setProperty("GARAGE-MAIN-RED-HOURS", dataToString(d1));
 		props.setProperty("GARAGE-MAIN-BLACK-HOURS", dataToString(d2));
@@ -462,7 +477,7 @@ public class DataLogger {
 		if(str==null)
 		{
 			System.err.println("******************** getData returned null: " + data_name);
-			App_EBM.log.LogMessage_High("ERROR: getData returned null: " + data_name);
+			App_EBM.log.LogMessage("ERROR: getData returned null: " + data_name);
 		}
 		if(str.contains(","))
 			s = str.split(",");
@@ -489,13 +504,13 @@ public class DataLogger {
 		else if(data_name.contains("MONTHS"))
 			return "kW-Minutes";
 		
-		App_EBM.log.LogMessage_High("Invalid data type (units): " + data_name);
+		App_EBM.log.LogMessage("Invalid data type (units): " + data_name);
 		return "invalid";
 	}
 	
 	private void resetMins()
 	{
-		App_EBM.log.LogMessage_High("Resetting mins");
+		App_EBM.log.LogMessage("Resetting mins");
 		props.setProperty("GARAGE-MAIN-RED-MINUTES", EMPTY_MIN_60);
 		props.setProperty("GARAGE-MAIN-BLACK-MINUTES", EMPTY_MIN_60);
 		props.setProperty("GARAGE-PLUGS-MINUTES", EMPTY_MIN_60);
@@ -504,7 +519,7 @@ public class DataLogger {
 	
 	private void resetHours()
 	{
-		App_EBM.log.LogMessage_High("Resetting hours");
+		App_EBM.log.LogMessage("Resetting hours");
 		props.setProperty("GARAGE-MAIN-RED-HOURS", EMPTY_HR_MO_24);
 		props.setProperty("GARAGE-MAIN-BLACK-HOURS", EMPTY_HR_MO_24);
 		props.setProperty("GARAGE-PLUGS-HOURS", EMPTY_HR_MO_24);
@@ -513,7 +528,7 @@ public class DataLogger {
 	
 	private void resetDays()
 	{
-		App_EBM.log.LogMessage_High("Resetting days");
+		App_EBM.log.LogMessage("Resetting days");
 		props.setProperty("GARAGE-MAIN-RED-DAYS", EMPTY_DAY_31);
 		props.setProperty("GARAGE-MAIN-BLACK-DAYS", EMPTY_DAY_31);
 		props.setProperty("GARAGE-PLUGS-DAYS", EMPTY_DAY_31);
@@ -522,7 +537,7 @@ public class DataLogger {
 	
 	private void resetMonths()
 	{
-		App_EBM.log.LogMessage_High("Resetting months");
+		App_EBM.log.LogMessage("Resetting months");
 		props.setProperty("GARAGE-MAIN-RED-MONTHS", EMPTY_HR_MO_24);
 		props.setProperty("GARAGE-MAIN-BLACK-MONTHS", EMPTY_HR_MO_24);
 		props.setProperty("GARAGE-PLUGS-MONTHS", EMPTY_HR_MO_24);
@@ -531,7 +546,7 @@ public class DataLogger {
 	
 	public void genDefaultDataFile()
 	{
-		App_EBM.log.LogMessage_High("Resetting data");
+		App_EBM.log.LogMessage("Resetting data");
 		resetMonths();
 		resetDays();
 		resetHours();
@@ -557,7 +572,7 @@ public class DataLogger {
 			Files.copy(dataFile.toPath(), Paths.get(folder.toString() + "/" + BACKUP_FILE_NAME), StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e1) {
 			e1.printStackTrace();
-			App_EBM.log.LogMessage_High("Failed to copy properties file to backup file");
+			App_EBM.log.LogMessage("Failed to copy properties file to backup file");
 		}
 		
 		props.setProperty("YEAR", Integer.toString(Calendar.getInstance().get(Calendar.YEAR)));
@@ -575,10 +590,10 @@ public class DataLogger {
 			props.storeToXML(os, "Minutes are in watt-seconds, hours and days are in kW-seconds, months are kW-minutes", "UTF-8");
 			os.close();
 		} catch (FileNotFoundException e) {
-			App_EBM.log.LogMessage_High("Error: Can't save newly generated props file due to file not found error.");
+			App_EBM.log.LogMessage("Error: Can't save newly generated props file due to file not found error.");
 			e.printStackTrace();
 		} catch (IOException e) {
-			App_EBM.log.LogMessage_High("Error: Can't save newly generated props file.");
+			App_EBM.log.LogMessage("Error: Can't save newly generated props file.");
 			e.printStackTrace();
 		}
 	}

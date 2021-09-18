@@ -24,7 +24,7 @@ public class DataRequestCB extends ConnectionManagerCallback{
 		} catch (GMSEC_Exception e) {
 			e.printStackTrace();
 			System.err.println("ERROR: failed to extract data from request data message. Message:\n" + msg.toXML());
-			App_EBM.log.LogMessage_High("ERROR: failed to extract data from request data message. Message:\n" + msg.toXML());
+			App_EBM.log.LogMessage("ERROR: failed to extract data from request data message. Message:\n" + msg.toXML());
 		}
 	}
 

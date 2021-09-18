@@ -16,9 +16,9 @@ import home.gmsec.GMSECPublisher;
 import home.gmsec.GMSECSubscriber;
 import home.gmsec.MsgFactory;
 import home.gmsec.callbacks.DataRequestCB;
-import home.utils.Configuration;
+import home.utils.AppConfiguration;
 import home.utils.DataLogger;
-import home.utils.Logger;
+import home.utils.EventLogger;
 import home.utils.Serial;
 
 /************ TODO *****************
@@ -45,10 +45,10 @@ import home.utils.Serial;
  */
 
 public class App_EBM {
-	private static final String VERSION = "2020.8.1.1500";
+	private static final String VERSION = "2021.9.18.0730";
 	private static final long START_TIME_MILLIS = System.currentTimeMillis();
 	
-	public static Logger log;
+	public static EventLogger log;
 	private static DataLogger dataLog;
 	private static SerialDataProcessor sdProcessor;
 	public static GMSECConnection gmsec;
@@ -59,7 +59,7 @@ public class App_EBM {
 
 	private static boolean isFinished = false;	
 	
-	private static Configuration config;
+	private static AppConfiguration config;
 	
 	private static int lastSecond;
 	private static short[] dataGarageMainRedSeconds = new short[60];
@@ -74,19 +74,19 @@ public class App_EBM {
 	
 	public static void main(String[] args) throws Exception
 	{
-		log = new Logger();
-		log.LogMessage_High("=============================");
-		log.LogMessage_High("App started. Loading config.");
+		log = new EventLogger();
+		log.LogMessage("=============================");
+		log.LogMessage("App started. Loading config.");
 		
-		config = new Configuration("config.properties");
+		config = new AppConfiguration("config.properties");
 		
-		log.LogMessage_High("Version: " + VERSION);
+		log.LogMessage("Version: " + VERSION);
 
 		
 		//======== GET COMMAND LINE ARGUMENTS ==========
-		log.LogMessage_Low("Getting command line args");
-		String commPort = config.getDefaultCommPort();
-		String gmsec_args[] = {config.getGmsecMode(), "mw-id="+config.getGmsecMw(), config.getGmsecServer()};
+		log.LogMessage("Getting command line args");
+		String commPort = config.getPropertyAsString("DEFAULT_COMM_PORT");
+		String gmsec_args[] = {config.getPropertyAsString("GMSEC_MODE"), "mw-id="+config.getPropertyAsString("GMSEC_MW"), config.getPropertyAsString("GMSEC_SERVER")};
 		
 		if (args.length == 1)
 		{
@@ -113,7 +113,7 @@ public class App_EBM {
 		}
 		
 		//============== INITIALIZE =================
-		log.LogMessage_Low("Initializing");
+		log.LogMessage("Initializing");
 		/********************************
 		 * DATA FILE
 		 ********************************/
@@ -132,7 +132,7 @@ public class App_EBM {
 		
 		dataReqCB = new DataRequestCB();
 		gSub = new GMSECSubscriber(gmsec.getConnMgr());
-		gSub.subscribe(config.getDataRequestTopic(), dataReqCB);
+		gSub.subscribe(config.getPropertyAsString("TOPIC_DATA_REQ"), dataReqCB);
 		
 		// Create a new message factory for generating messages
 		msgFact = new MsgFactory();
@@ -142,7 +142,7 @@ public class App_EBM {
 		if(!serial.isConnected())
 		{
 			// Send GMSEC Message
-			gPub.publish(msgFact.generateWarningMessage(config.getDevice(), config.getRole(), config.getLocation(), "Could not find desired COM port."));
+			gPub.publish(msgFact.generateWarningMessage(config.getPropertyAsString("DEVICE"), config.getPropertyAsString("ROLE"), config.getPropertyAsString("LOCATION"), "Could not find desired COM port."));
 		}
 		
 		//================ LOOP =====================
@@ -152,7 +152,7 @@ public class App_EBM {
 			try {
 				Thread.sleep(0,0);
 			} catch (InterruptedException e) {
-				log.LogMessage_High("isFinished error!");
+				log.LogMessage("isFinished error!");
 				e.printStackTrace();
 			}
 			
@@ -164,11 +164,11 @@ public class App_EBM {
 			
 			if(sdProcessor.isStatusReady())
 				// Send the GMSEC Data Message
-				gPub.publish(msgFact.generateStatusMessage(VERSION, config.getDevice(), config.getRole(), config.getLocation(), getRunTime(), sdProcessor.getLoopData(), sdProcessor.getSampleData()));
+				gPub.publish(msgFact.generateStatusMessage(VERSION, config.getPropertyAsString("DEVICE"), config.getPropertyAsString("ROLE"), config.getPropertyAsString("LOCATION"), getRunTime(), sdProcessor.getLoopData(), sdProcessor.getSampleData()));
 		}
 		
 		
-		log.LogMessage_High("Disconnecting from GMSEC bus");
+		log.LogMessage("Disconnecting from GMSEC bus");
 
 		// Disconnect and cleanup the GMSEC connection
 		gmsec.disconnect();
@@ -275,7 +275,7 @@ public class App_EBM {
 		
 		// EVERY SECOND PUBLISH YOUR BASIC DATA MESSAGE
 		// Send the GMSEC Data Message
-		gPub.publish(msgFact.generateSingleDataMessage(config.getDevice(), config.getRole(), config.getLocation(), sec, gmRedAvg, gmBlackAvg, gpAvg, lAvg, "Watt-Seconds"));
+		gPub.publish(msgFact.generateSingleDataMessage(config.getPropertyAsString("DEVICE"), config.getPropertyAsString("ROLE"), config.getPropertyAsString("LOCATION"), sec, gmRedAvg, gmBlackAvg, gpAvg, lAvg, "Watt-Seconds"));
 		
 		// If we are starting a new minute, the last minute's worth of data needs to be saved
 		if(needSave)
@@ -313,7 +313,7 @@ public class App_EBM {
 		//			in different processing on that end.
 		// Get the data from the dataLog and store in data
 		String data = dataLog.getStringValue(data_name); 
-		gPub.publish(msgFact.generateDataMessage(config.getDevice(), config.getRole(), config.getLocation(), data_name, data, req_id, 
+		gPub.publish(msgFact.generateDataMessage(config.getPropertyAsString("DEVICE"), config.getPropertyAsString("ROLE"), config.getPropertyAsString("LOCATION"), data_name, data, req_id, 
 				dataLog.getStringValue("SECOND"), dataLog.getStringValue("MINUTE"), dataLog.getStringValue("HOUR"),
 				dataLog.getStringValue("DAY_OF_MONTH"), dataLog.getStringValue("MONTH"), dataLog.getStringValue("YEAR"),
 				dataLog.getUnits(data_name)));
