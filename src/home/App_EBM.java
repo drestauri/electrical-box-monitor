@@ -22,8 +22,6 @@ import home.utils.EventLogger;
 import home.utils.Serial;
 
 /************ TODO *****************
- * - Find a way to make the data.properties file more robust. I assume I cut power/rebooted while the file was open and it ended up getting corrupted
- * 		> Create a copy whenever you open it and delete it whenever you close. If it's invalid, restore from the copy (or reset if no copy)?
  * - Implement a message subscriber that sets the system date and time (just print the command if windows or execute if Linux) 
  * - Separate out some often used status functions (like "getRunTime" and "syncDateAndTime") for reuse
  * - Change to send last data point and status every second instead of only if new data is available
