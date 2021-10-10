@@ -22,7 +22,9 @@ import home.utils.EventLogger;
 import home.utils.Serial;
 
 /************ TODO *****************
+ * - Convert to C
  * - Implement a message subscriber that sets the system date and time (just print the command if windows or execute if Linux) 
+ *    > Alternatively, make sure NTP is on
  * - Separate out some often used status functions (like "getRunTime" and "syncDateAndTime") for reuse
  * - Change to send last data point and status every second instead of only if new data is available
  *  
@@ -39,11 +41,10 @@ import home.utils.Serial;
  *  	- echos this app's Heartbeat value to ensure sync
  *  	- 0 from RPi means stop sending data (let serial buffer clear and resync)
  *  
- *  TEST FOR JENKINS!!!
  */
 
 public class App_EBM {
-	private static final String VERSION = "2021.9.18.0730";
+	private static final String VERSION = "2021.10.10.0800";
 	private static final long START_TIME_MILLIS = System.currentTimeMillis();
 	
 	public static EventLogger log;
@@ -100,7 +101,7 @@ public class App_EBM {
 			gmsec_args[2] = args[3];
 		}else
 		{
-			System.out.println("usage: java -jar serial-over-usb.jar <SERIAL_COMM_PORT> subscribe mw-id=<middleware> server=<ip_address>:<port>\n");
+			System.out.println("usage: java -jar serial-over-usb.jar <SERIAL_COMM_PORT> subscribe mw-id=<middleware> server=tcp://<ip_address>:<port>\n");
 			System.out.println("\n== NOTE ==");
 			System.out.println(" On raspberry pi, use 'ls /dev/*tty*' to list ports with your");
 			System.out.println(" device plugged and then not to identify which name changes");
@@ -123,19 +124,24 @@ public class App_EBM {
 		//============== Setup GMSEC ================
 		// Send the arguments to the connection class
 		// GMSECConnection() also starts the connection to the message bus
+		log.LogMessage("Making a GMSEC connection");
 		gmsec = new GMSECConnection(gmsec_args);
 		
 		// Create a new publisher object that can send messages.
+		log.LogMessage("Making a GMSEC publisher");
 		gPub = new GMSECPublisher(gmsec.getConnMgr());
 		
 		dataReqCB = new DataRequestCB();
+		log.LogMessage("Making a GMSEC subscriber");
 		gSub = new GMSECSubscriber(gmsec.getConnMgr());
+		log.LogMessage("Subscribing to topic:" + config.getPropertyAsString("TOPIC_DATA_REQ"));
 		gSub.subscribe(config.getPropertyAsString("TOPIC_DATA_REQ"), dataReqCB);
 		
 		// Create a new message factory for generating messages
 		msgFact = new MsgFactory();
 		
 		// Setup the serial port to Arduino
+		log.LogMessage("Connecting to USB port");
 		Serial serial = new Serial(commPort);
 		if(!serial.isConnected())
 		{

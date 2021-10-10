@@ -9,6 +9,5 @@
 	<classpathentry kind="lib" path="lib/gmsecapi.jar"/>
 	<classpathentry kind="lib" path="lib/jSerialComm-2.6.0.jar"/>
 	<classpathentry kind="lib" path="release/electrical-box-monitor.jar"/>
-	<classpathentry kind="lib" path="lib/home.utils.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
