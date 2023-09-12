@@ -1,6 +1,7 @@
 # electrical-box-monitor
 Raspberry Pi receives data over serial from Arduino, processes, then publishes status messages via GMSEC
 
+# Summary
 This software will be placed in a remote AC power consumption measuring device placed at 2 locations around my house.
 It will consist of an Arduino monitoring four to six 60Hz AC circuits for power consumption and a Raspberry Pi
 that will receive and process the data from the Arduino. This is the code running on the Raspberry Pi.
@@ -20,6 +21,18 @@ A1024
 The 1st character is a letter identifying the data being sent and the number starting from the second character
 is the actual data point. The Arduino's analog data comes as a value from 0-1024, and other data may also be sent
 if necessary such as the sample rate, device state of health, Arduino's software version, etc.
+
+Note to self: as of Sept 2023, I have lost track of the exact Arduino code and will probably have to re-write that.
+Currently the baud rate is set to 115200 and I am getting the following codes:
+```
+A1024     # A-D are the 4 analog channels
+B1024
+C1024
+D1024
+L100      # Probably a setting value
+S500      # Probably a setting value  
+V200413   # probably software version: 4/13/2020
+```
 
 The Electrical Box Monitor code (this code) takes the messages received from the Arduino and calculates the average 
 over 1 second. This data is stored for 60 seconds and then used to calculate and save the average consumption for 
@@ -87,10 +100,11 @@ sudo java -jar -Djava.library.path=/home/pi/Desktop/GMSEC_API/bin/ /home/pi/Desk
 If all goes well, you should see the electrical-box-monitor.jar code writing data and status messages over GMSEC once every second.
 
 # Anticipated Updates
-1. Receive GMSEC commands to change it's configuration (TBD)
-2. Implement better error handling for data that doesn't exist or is incorrectly spelled
-3. Potentially will make the DataLogger more generic code to encourage reuse of that
-4. Update code to send last Data point and Status every second regardless of whether new data is available
+1. Switch this solution to use Python instead of Java
+2. Receive GMSEC commands to change it's configuration (TBD)
+3. Implement better error handling for data that doesn't exist or is incorrectly spelled
+4. Potentially will make the DataLogger more generic code to encourage reuse of that
+5. Update code to send last Data point and Status every second regardless of whether new data is available
 
 # Contributing
 This is for a home project and while you're free to copy and modify to your liking, I will not be accepting contributions.
