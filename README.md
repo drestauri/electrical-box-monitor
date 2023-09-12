@@ -22,18 +22,6 @@ The 1st character is a letter identifying the data being sent and the number sta
 is the actual data point. The Arduino's analog data comes as a value from 0-1024, and other data may also be sent
 if necessary such as the sample rate, device state of health, Arduino's software version, etc.
 
-Note to self: as of Sept 2023, I have lost track of the exact Arduino code and will probably have to re-write that.
-Currently the baud rate is set to 115200 and I am getting the following codes:
-```
-A1024     # A-D are the 4 analog channels
-B1024
-C1024
-D1024
-L100      # Probably a setting value
-S500      # Probably a setting value  
-V200413   # probably software version: 4/13/2020
-```
-
 The Electrical Box Monitor code (this code) takes the messages received from the Arduino and calculates the average 
 over 1 second. This data is stored for 60 seconds and then used to calculate and save the average consumption for 
 the past minute, hour, day, month, and stores the history for up to 24 months. Every second, the data is also sent 
@@ -47,6 +35,18 @@ data or only partial data is received, it is not sent. When this code receives a
 average running value and that average value gets sent every second so that we portray the power consumption measured
 over 1 second as accurately as possible rather than just the max value for that one second. Modify this to fit your
 application or for testing as you see fit.
+
+Note to self: as of Sept 2023, I have lost track of the exact Arduino code and will probably have to re-write that.
+Currently the baud rate is set to 115200 and I am getting the following codes:
+```
+A1024     # A-D are the 4 analog channels 1024 levels
+B1024
+C1024
+D1024
+L100      # Loop time
+S500      # Sample rate
+V200413   # probably software version: 4/13/2020
+```
 
 This code can also receive commands over GMSEC to send strings of data for all other durations of time other than
 the 1 second samples in case the other device would like to display or process longer term data.
